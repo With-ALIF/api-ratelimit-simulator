@@ -1,0 +1,89 @@
+/* ===== Root / Base ===== */
+.root {
+    -fx-font-family: "Inter", "Segoe UI", sans-serif;
+    -fx-background-color: #0f172a; /* slate-900  #0f172a */
+    -fx-text-fill: #e5e7eb;
+}
+
+/* ===== Top Bar ===== */
+.top-bar {
+    -fx-background-color: #020617; /* darker */
+    -fx-padding: 14 20;
+    -fx-border-color: #1e293b;
+    -fx-border-width: 0 0 1 0;
+}
+
+.app-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e5e7eb;
+}
+
+/* ===== Cards ===== */
+.card {
+    -fx-background-color: #020617;
+    -fx-background-radius: 12;
+    -fx-padding: 16;
+    -fx-border-radius: 12;
+    -fx-border-color: #1e293b;
+}
+
+/* ===== Section titles ===== */
+.section-title {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #cbd5f5;
+}
+
+/* ===== Status colors ===== */
+.status-ok {
+    -fx-text-fill: #22c55e;
+}
+.status-warning {
+    -fx-text-fill: #facc15;
+}
+.status-danger {
+    -fx-text-fill: #ef4444;
+}
+
+/* ===== Table ===== */
+.table-view {
+    -fx-background-color: transparent;
+    -fx-control-inner-background: #020617;
+    -fx-border-color: #1e293b;
+    -fx-border-radius: 10;
+}
+
+.table-view .column-header {
+    -fx-background-color: #020617;
+    -fx-border-color: #1e293b;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #1e293b;
+}
+
+/* ===== Logs ===== */
+.log-area {
+    -fx-control-inner-background: #020617;
+    -fx-text-fill: #94a3b8;
+}
+
+
+.button {
+    -fx-background-color: #1e293b;
+    -fx-text-fill: #e5e7eb;
+    -fx-background-radius: 8;
+    -fx-padding: 8 14;
+}
+
+.button:hover {
+    -fx-background-color: #334155;
+}
+
+.combo-box {
+    -fx-background-color: #020617;
+    -fx-border-color: #1e293b;
+    -fx-border-radius: 6;
+    -fx-text-fill: #e5e7eb;
+}
