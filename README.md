@@ -1,11 +1,15 @@
 # Smart API Rate-Limit & Abuse Simulator
 
-## **Team Name:** Async Alpha  
-Md. Abullah Al Khalid
+## **Team Name:** Runtime Crew
+
 
 ### **Team Member:** 
-
-
+```yaml
+Md. Abdullah - Al - Khalid Alif
+Mithun Chandra Sarker
+Md. Asadujjaman
+Sojib Ray Shourav
+```
 ## Project Overview
 This project is a JavaFX-based desktop application that simulates how modern software systems
 track API usage, apply rate-limiting rules, and detect abusive behavior.
@@ -31,6 +35,13 @@ No real networking, servers, or APIs are involved.
 - Strategy-like policy evaluation
 - Enums for request types and violation levels
 - Logical simulation of real-world systems
+
+## Compilation and Execution 
+
+``` bash 
+mvn clean javafx:run
+
+```
 
 ## Collaboration Method
 This project is developed using **asynchronous collaboration**.
