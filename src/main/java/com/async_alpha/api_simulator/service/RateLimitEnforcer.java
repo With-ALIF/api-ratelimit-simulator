@@ -32,12 +32,10 @@ public class RateLimitEnforcer {
 
         LocalDateTime now = request.getTimestamp();
         
-        // Count requests within the time window
         long recentRequestCount = log.getRequests().stream()
             .filter(r -> Duration.between(r.getTimestamp(), now).compareTo(timeWindow) <= 0)
             .count();
 
-        // Block if limit exceeded
         return recentRequestCount >= maxRequests;
     }
 
@@ -49,16 +47,12 @@ public class RateLimitEnforcer {
         boolean blocked = shouldBlock(request);
         
         if (!blocked) {
-            // Only log if not blocked
             requestLogger.logRequest(request);
         }
 
         return new RequestResult(request, blocked, getRemainingQuota(request.getClientId()));
     }
 
-    /**
-     * Get remaining quota for a client
-     */
     public int getRemainingQuota(String clientId) {
         RequestLog log = requestLogger.getLog(clientId);
         
@@ -75,9 +69,6 @@ public class RateLimitEnforcer {
         return Math.max(0, maxRequests - (int)recentCount);
     }
 
-    /**
-     * Get time until quota resets for a client
-     */
     public Duration getTimeUntilReset(String clientId) {
         RequestLog log = requestLogger.getLog(clientId);
         
@@ -88,7 +79,6 @@ public class RateLimitEnforcer {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oldestInWindow = now.minus(timeWindow);
         
-        // Find oldest request in current window
         LocalDateTime oldestRequest = log.getRequests().stream()
             .map(ServiceRequest::getTimestamp)
             .filter(t -> t.isAfter(oldestInWindow))
@@ -112,9 +102,6 @@ public class RateLimitEnforcer {
         return timeWindow;
     }
 
-    /**
-     * Result of processing a request
-     */
     public static class RequestResult {
         private final ServiceRequest request;
         private final boolean blocked;
