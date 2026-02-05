@@ -1,4 +1,4 @@
-package  com.async_alpha.api_simulator.model;
+package com.async_alpha.api_simulator.model;
 
 public class Client {
 

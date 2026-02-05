@@ -7,9 +7,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-/**
- * Enhanced Report Generator that creates comprehensive usage and violation reports
- */
 public class EnhancedReportGenerator {
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = 
@@ -17,18 +14,14 @@ public class EnhancedReportGenerator {
     private static final DateTimeFormatter TIME_FORMAT = 
         DateTimeFormatter.ofPattern("HH:mm:ss");
 
-    /**
-     * Generate a comprehensive violation report
-     */
     public String generateViolationReport(AbuseReport report, RequestLog log, ClientActivity activity) {
         StringBuilder sb = new StringBuilder();
         
-        // Header
         sb.append("═══════════════════════════════════════════════════════════\n");
         sb.append("           API ABUSE & VIOLATION REPORT                    \n");
         sb.append("═══════════════════════════════════════════════════════════\n\n");
         
-        // Client Information
+
         sb.append("CLIENT INFORMATION\n");
         sb.append("─────────────────────────────────────────────────────────\n");
         sb.append(String.format("Client ID:        %s\n", report.getClientId()));
@@ -37,7 +30,6 @@ public class EnhancedReportGenerator {
             getSeverityIcon(report.getLevel()), 
             report.getLevel()));
         
-        // Usage Statistics
         if (activity != null) {
             sb.append("USAGE STATISTICS\n");
             sb.append("─────────────────────────────────────────────────────────\n");
@@ -52,7 +44,6 @@ public class EnhancedReportGenerator {
             sb.append(String.format("Last Activity:    %s\n\n", activity.getLastActivityTime()));
         }
         
-        // Request Type Distribution
         if (log != null && !log.getRequests().isEmpty()) {
             sb.append("REQUEST TYPE DISTRIBUTION\n");
             sb.append("─────────────────────────────────────────────────────────\n");
@@ -70,7 +61,6 @@ public class EnhancedReportGenerator {
             sb.append("\n");
         }
         
-        // Violations
         if (!report.getViolations().isEmpty()) {
             sb.append("VIOLATIONS DETECTED\n");
             sb.append("─────────────────────────────────────────────────────────\n");
@@ -87,16 +77,14 @@ public class EnhancedReportGenerator {
         } else {
             sb.append("VIOLATIONS DETECTED\n");
             sb.append("─────────────────────────────────────────────────────────\n");
-            sb.append("✅ No violations detected - Clean usage pattern\n\n");
+            sb.append("No violations detected - Clean usage pattern\n\n");
         }
-        
-        // Recommendations
+ 
         sb.append("RECOMMENDATIONS\n");
         sb.append("─────────────────────────────────────────────────────────\n");
         sb.append(generateRecommendations(report, activity));
         sb.append("\n");
         
-        // Footer
         sb.append("═══════════════════════════════════════════════════════════\n");
         sb.append("                    END OF REPORT                          \n");
         sb.append("═══════════════════════════════════════════════════════════\n");
@@ -104,9 +92,6 @@ public class EnhancedReportGenerator {
         return sb.toString();
     }
 
-    /**
-     * Generate a summary usage report (lighter version)
-     */
     public String generateUsageReport(String clientId, ClientActivity activity, RequestLog log) {
         StringBuilder sb = new StringBuilder();
         
@@ -120,8 +105,8 @@ public class EnhancedReportGenerator {
         
         if (activity != null) {
             sb.append(String.format("Total Requests:   %d\n", activity.getTotalRequests()));
-            sb.append(String.format("✅ Allowed:       %d\n", activity.getAllowedRequests()));
-            sb.append(String.format("🚫 Blocked:       %d\n", activity.getBlockedRequests()));
+            sb.append(String.format("Allowed:          %d\n", activity.getAllowedRequests()));
+            sb.append(String.format("Blocked:          %d\n", activity.getBlockedRequests()));
             sb.append(String.format("Success Rate:     %.1f%%\n", activity.getSuccessRate()));
         }
         
@@ -137,9 +122,6 @@ public class EnhancedReportGenerator {
         return sb.toString();
     }
 
-    /**
-     * Generate a multi-client comparison report
-     */
     public String generateComparisonReport(Map<String, ClientActivity> allActivities) {
         StringBuilder sb = new StringBuilder();
         
@@ -165,8 +147,6 @@ public class EnhancedReportGenerator {
         
         return sb.toString();
     }
-
-    // Helper Methods
     
     private Map<RequestType, Integer> getRequestTypeDistribution(RequestLog log) {
         Map<RequestType, Integer> distribution = new EnumMap<>(RequestType.class);
@@ -195,25 +175,24 @@ public class EnhancedReportGenerator {
         StringBuilder sb = new StringBuilder();
         
         if (report.getLevel() == ViolationLevel.CRITICAL) {
-            sb.append("🚨 CRITICAL: Immediate action required!\n");
+            sb.append("   CRITICAL: Immediate action required!\n");
             sb.append("   → Consider blocking this client temporarily\n");
             sb.append("   → Review client's API key and permissions\n");
             sb.append("   → Contact client about usage patterns\n");
         } else if (report.getLevel() == ViolationLevel.WARNING) {
-            sb.append("⚠️  WARNING: Monitor this client closely\n");
+            sb.append("  WARNING: Monitor this client closely\n");
             sb.append("   → Send usage warning notification\n");
             sb.append("   → Review if rate limits need adjustment\n");
             sb.append("   → Track for pattern escalation\n");
         } else {
-            sb.append("✅ NORMAL: No action required\n");
+            sb.append(" NORMAL: No action required\n");
             sb.append("   → Client is using API within acceptable limits\n");
             sb.append("   → Continue standard monitoring\n");
         }
         
-        // Additional recommendations based on activity
         if (activity != null) {
             if (activity.getSuccessRate() < 50) {
-                sb.append("\n💡 Low success rate detected:\n");
+                sb.append("\n Low success rate detected:\n");
                 sb.append("   → Client may need help with integration\n");
                 sb.append("   → Consider providing API usage documentation\n");
             }

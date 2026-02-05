@@ -6,10 +6,6 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Detects retry abuse and rapid sequential failures
- * This catches clients who repeatedly hammer the API despite being blocked
- */
 public class RetryAbusePolicy implements RatePolicy {
 
     private final int maxConsecutiveBlocked; // Max allowed consecutive blocked requests
@@ -28,12 +24,8 @@ public class RetryAbusePolicy implements RatePolicy {
             return;
         }
 
-        // Detect rapid retry patterns
         detectRapidRetries(requests, report);
-        
-        // Note: This is a simplified version - in the real implementation,
-        // you'd need access to which requests were blocked
-        // For now, we detect suspiciously rapid consecutive requests
+
         detectSuspiciousRapidRequests(requests, report);
     }
 
@@ -46,7 +38,6 @@ public class RetryAbusePolicy implements RatePolicy {
                 requests.get(i + 1).getTimestamp()
             );
             
-            // Retry within 1 second is suspicious
             if (timeBetween.toMillis() < 1000) {
                 rapidRetryCount++;
             }
@@ -71,7 +62,6 @@ public class RetryAbusePolicy implements RatePolicy {
                 requests.get(i + 1).getTimestamp()
             );
             
-            // Consecutive requests within retry window
             if (timeBetween.compareTo(retryWindow) <= 0) {
                 consecutiveRapid++;
                 maxConsecutive = Math.max(maxConsecutive, consecutiveRapid);
