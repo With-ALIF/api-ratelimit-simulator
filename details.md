@@ -1,3 +1,5 @@
+# Project Gropu - 02
+
 # Smart API Rate-Limit & Abuse Simulator
 
 In modern software systems, many users or systems access the same service simultaneously. To keep services reliable, secure, and fair, the system intetrnally keeps track of how requests are made and checks whether the usage is normal or abnormal.
@@ -15,7 +17,7 @@ Build a JavaFX-based desktop application that simulates how modern web systems p
  
 This project models concepts used in `cloud platforms, fintech systems, and large-scale web services`, without requiring real networking or servers. The project simulates service request behavior using manually generated or `file-based data`. No real service, API, or network communication is required or expected. In this project, you are NOT building a real online service, login system, or payment system. You are building a simulation that models how such systems internally record requests and analyze usage patterns.
 
-## 🧠 Concept Overview
+## Concept Overview
 
 This simulator models concepts commonly used in:
 
@@ -107,7 +109,7 @@ You may generate request data in three allowed ways (choose at least one):
 ## Option A: Manual Entry via JavaFX Form UI fields:
 
 - Client selection (ComboBox) 
-- Request type (ComboBox) •
+- Request type (ComboBox) 
 - “Add Request” button
 
 When button is clicked:
@@ -121,7 +123,7 @@ When button is clicked:
 
 You can:
 - Load a `.txt` or `.csv` file 
-- Parse each line into ServiceRequest objects
+- Parse each line into `ServiceRequest` objects
 
 Example text record: `10:15:30, CLIENT_A, READ`
 

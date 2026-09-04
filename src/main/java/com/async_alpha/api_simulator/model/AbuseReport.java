@@ -1,6 +1,7 @@
 package com.async_alpha.api_simulator.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class AbuseReport {
@@ -14,11 +15,13 @@ public class AbuseReport {
     }
 
     public void addViolation(String message) {
-        violations.add(message);
+        if (message != null && !message.trim().isEmpty() && !violations.contains(message)) {
+            violations.add(message);
+        }
     }
 
     public List<String> getViolations() {
-        return violations;
+        return Collections.unmodifiableList(violations);
     }
 
     public String getClientId() {
@@ -29,7 +32,41 @@ public class AbuseReport {
         return level;
     }
 
-    public void setLevel(ViolationLevel level) {
-        this.level = level;
+    public void setLevel(ViolationLevel newLevel) {
+        if (newLevel == null) {
+            return;
+        }
+        if (this.level == ViolationLevel.CRITICAL) {
+            return;
+        }
+        if (this.level == ViolationLevel.WARNING && newLevel == ViolationLevel.NORMAL) {
+            return;
+        }
+        this.level = newLevel;
+    }
+
+    public boolean hasViolations() {
+        return !violations.isEmpty();
+    }
+
+    public int getViolationCount() {
+        return violations.size();
+    }
+
+    public boolean isCritical() {
+        return level == ViolationLevel.CRITICAL;
+    }
+
+    public boolean isWarningOrAbove() {
+        return level == ViolationLevel.WARNING || level == ViolationLevel.CRITICAL;
+    }
+
+    @Override
+    public String toString() {
+        return "AbuseReport{" +
+                "clientId='" + clientId + '\'' +
+                ", level=" + level +
+                ", violationsCount=" + violations.size() +
+                '}';
     }
 }

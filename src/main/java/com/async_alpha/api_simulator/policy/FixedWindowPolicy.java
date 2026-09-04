@@ -4,6 +4,7 @@ import com.async_alpha.api_simulator.model.*;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class FixedWindowPolicy implements RatePolicy {
 
@@ -17,15 +18,43 @@ public class FixedWindowPolicy implements RatePolicy {
 
     @Override
     public void evaluate(RequestLog requestLog, AbuseReport report) {
-        LocalDateTime now = LocalDateTime.now();
+        if (requestLog == null || requestLog.getRequests().isEmpty()) {
+            return;
+        }
 
-        long count = requestLog.getRequests().stream()
-                .filter(r -> Duration.between(r.getTimestamp(), now).compareTo(window) <= 0)
+        List<ServiceRequest> requests = requestLog.getRequests();
+        LocalDateTime latestTime = requests.get(requests.size() - 1).getTimestamp();
+
+        long count = requests.stream()
+                .filter(r -> {
+                    Duration diff = Duration.between(r.getTimestamp(), latestTime);
+                    return !diff.isNegative() && diff.compareTo(window) <= 0;
+                })
                 .count();
 
         if (count > maxRequests) {
-            report.addViolation("Fixed window limit exceeded: " + count + " requests");
+            report.addViolation(String.format(
+                "Fixed window limit exceeded: %d requests in %ds window (limit: %d)",
+                count, window.getSeconds(), maxRequests));
             report.setLevel(ViolationLevel.WARNING);
         }
+    }
+
+    @Override
+    public String getName() {
+        return "Fixed Window Policy";
+    }
+
+    @Override
+    public String getDescription() {
+        return String.format("Max %d requests per %ds window", maxRequests, window.getSeconds());
+    }
+
+    public int getMaxRequests() {
+        return maxRequests;
+    }
+
+    public Duration getWindow() {
+        return window;
     }
 }

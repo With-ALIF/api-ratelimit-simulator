@@ -22,7 +22,15 @@ public class ClientActivityTracker {
     }
 
     public Map<String, ClientActivity> getAllActivities() {
-        return activities;
+        return Collections.unmodifiableMap(activities);
+    }
+
+    public void clearClient(String clientId) {
+        activities.remove(clientId);
+    }
+
+    public void clearAll() {
+        activities.clear();
     }
 
     public static class ClientActivity {
@@ -45,6 +53,7 @@ public class ClientActivityTracker {
             }
 
             ActivityRecord record = new ActivityRecord(
+                clientId,
                 request.getTimestamp(),
                 request.getRequestType(),
                 blocked
@@ -74,7 +83,7 @@ public class ClientActivityTracker {
         }
 
         public List<ActivityRecord> getRecords() {
-            return records;
+            return Collections.unmodifiableList(records);
         }
 
         public String getLastActivityTime() {
@@ -84,14 +93,20 @@ public class ClientActivityTracker {
     }
 
     public static class ActivityRecord {
+        private final String clientId;
         private final LocalDateTime timestamp;
         private final RequestType requestType;
         private final boolean blocked;
 
-        public ActivityRecord(LocalDateTime timestamp, RequestType requestType, boolean blocked) {
+        public ActivityRecord(String clientId, LocalDateTime timestamp, RequestType requestType, boolean blocked) {
+            this.clientId = clientId;
             this.timestamp = timestamp;
             this.requestType = requestType;
             this.blocked = blocked;
+        }
+
+        public String getClientId() {
+            return clientId;
         }
 
         public LocalDateTime getTimestamp() {

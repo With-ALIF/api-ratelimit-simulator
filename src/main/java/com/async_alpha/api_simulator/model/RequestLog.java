@@ -1,6 +1,7 @@
 package com.async_alpha.api_simulator.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class RequestLog {
@@ -13,14 +14,33 @@ public class RequestLog {
     }
 
     public void addRequest(ServiceRequest request) {
-        requests.add(request);
+        if (request != null) {
+            requests.add(request);
+        }
     }
 
     public List<ServiceRequest> getRequests() {
-        return requests;
+        return Collections.unmodifiableList(requests);
     }
 
     public String getClientId() {
         return clientId;
+    }
+
+    public int getRequestCount() {
+        return requests.size();
+    }
+
+    public boolean isEmpty() {
+        return requests.isEmpty();
+    }
+
+    public void clear() {
+        requests.clear();
+    }
+
+    @Override
+    public String toString() {
+        return String.format("RequestLog{clientId='%s', requestCount=%d}", clientId, requests.size());
     }
 }

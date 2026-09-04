@@ -17,7 +17,12 @@ public class SlidingWindowPolicy implements RatePolicy {
 
     @Override
     public void evaluate(RequestLog requestLog, AbuseReport report) {
+        if (requestLog == null) return;
         List<ServiceRequest> requests = requestLog.getRequests();
+
+        if (requests == null || requests.isEmpty()) {
+            return;
+        }
 
         for (int i = 0; i < requests.size(); i++) {
             int count = 1;
@@ -33,11 +38,31 @@ public class SlidingWindowPolicy implements RatePolicy {
                 }
 
                 if (count > maxRequests) {
-                    report.addViolation("Sliding window abuse detected");
+                    report.addViolation(String.format(
+                        "Sliding window abuse detected: %d requests within %ds window (limit: %d)",
+                        count, window.getSeconds(), maxRequests));
                     report.setLevel(ViolationLevel.CRITICAL);
                     return;
                 }
             }
         }
+    }
+
+    @Override
+    public String getName() {
+        return "Sliding Window Policy";
+    }
+
+    @Override
+    public String getDescription() {
+        return String.format("Max %d requests in any %ds sliding window", maxRequests, window.getSeconds());
+    }
+
+    public int getMaxRequests() {
+        return maxRequests;
+    }
+
+    public Duration getWindow() {
+        return window;
     }
 }

@@ -2,6 +2,8 @@ package com.async_alpha.api_simulator.service;
 
 import com.async_alpha.api_simulator.model.*;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -17,5 +19,31 @@ public class RequestLogger {
 
     public RequestLog getLog(String clientId) {
         return logs.get(clientId);
+    }
+
+    public Collection<String> getClientIds() {
+        return Collections.unmodifiableSet(logs.keySet());
+    }
+
+    public Map<String, RequestLog> getAllLogs() {
+        return Collections.unmodifiableMap(logs);
+    }
+
+    public int getTotalRequestCount() {
+        return logs.values().stream()
+            .mapToInt(RequestLog::getRequestCount)
+            .sum();
+    }
+
+    public boolean hasLogs() {
+        return !logs.isEmpty();
+    }
+
+    public void clearClient(String clientId) {
+        logs.remove(clientId);
+    }
+
+    public void clearAll() {
+        logs.clear();
     }
 }

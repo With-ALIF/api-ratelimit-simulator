@@ -1,9 +1,11 @@
 package com.async_alpha.api_simulator.service;
 
-import com.async_alpha.api_simulator.model.*;
+import com.async_alpha.api_simulator.model.RequestLog;
+import com.async_alpha.api_simulator.model.ServiceRequest;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class RateLimitEnforcer {
 
@@ -17,66 +19,61 @@ public class RateLimitEnforcer {
         this.requestLogger = requestLogger;
     }
 
-    /**
-     * Check if request should be allowed or blocked based on rate limit
-     * @return true if request should be BLOCKED, false if ALLOWED
-     */
     public boolean shouldBlock(ServiceRequest request) {
         RequestLog log = requestLogger.getLog(request.getClientId());
-        
         if (log == null || log.getRequests().isEmpty()) {
-            return false; // No previous requests, allow it
+            return false;
         }
 
-        LocalDateTime now = request.getTimestamp();
-        
-        long recentRequestCount = log.getRequests().stream()
-            .filter(r -> Duration.between(r.getTimestamp(), now).compareTo(timeWindow) <= 0)
+        LocalDateTime requestTime = request.getTimestamp();
+        long recentCount = log.getRequests().stream()
+            .filter(r -> {
+                Duration diff = Duration.between(r.getTimestamp(), requestTime);
+                return !diff.isNegative() && diff.compareTo(timeWindow) <= 0;
+            })
             .count();
 
-        return recentRequestCount >= maxRequests;
+        return recentCount >= maxRequests;
     }
 
-    /**
-     * Process request with rate limiting
-     * @return RequestResult containing whether it was allowed/blocked
-     */
     public RequestResult processRequest(ServiceRequest request) {
         boolean blocked = shouldBlock(request);
-        
         if (!blocked) {
             requestLogger.logRequest(request);
         }
-
         return new RequestResult(request, blocked, getRemainingQuota(request.getClientId()));
     }
 
     public int getRemainingQuota(String clientId) {
         RequestLog log = requestLogger.getLog(clientId);
-        
         if (log == null || log.getRequests().isEmpty()) {
             return maxRequests;
         }
 
         LocalDateTime now = LocalDateTime.now();
-        
-        long recentCount = log.getRequests().stream()
-            .filter(r -> Duration.between(r.getTimestamp(), now).compareTo(timeWindow) <= 0)
+        List<ServiceRequest> requests = log.getRequests();
+        LocalDateTime latest = requests.get(requests.size() - 1).getTimestamp();
+        LocalDateTime refTime = latest.isAfter(now) ? latest : now;
+
+        long recentCount = requests.stream()
+            .filter(r -> {
+                Duration diff = Duration.between(r.getTimestamp(), refTime);
+                return !diff.isNegative() && diff.compareTo(timeWindow) <= 0;
+            })
             .count();
 
-        return Math.max(0, maxRequests - (int)recentCount);
+        return Math.max(0, maxRequests - (int) recentCount);
     }
 
     public Duration getTimeUntilReset(String clientId) {
         RequestLog log = requestLogger.getLog(clientId);
-        
         if (log == null || log.getRequests().isEmpty()) {
             return Duration.ZERO;
         }
 
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oldestInWindow = now.minus(timeWindow);
-        
+
         LocalDateTime oldestRequest = log.getRequests().stream()
             .map(ServiceRequest::getTimestamp)
             .filter(t -> t.isAfter(oldestInWindow))
@@ -84,11 +81,9 @@ public class RateLimitEnforcer {
             .orElse(now);
 
         LocalDateTime resetTime = oldestRequest.plus(timeWindow);
-        
         if (resetTime.isBefore(now)) {
             return Duration.ZERO;
         }
-        
         return Duration.between(now, resetTime);
     }
 
@@ -111,28 +106,18 @@ public class RateLimitEnforcer {
             this.remainingQuota = remainingQuota;
         }
 
-        public ServiceRequest getRequest() {
-            return request;
-        }
+        public ServiceRequest getRequest() { return request; }
 
-        public boolean isBlocked() {
-            return blocked;
-        }
+        public boolean isBlocked() { return blocked; }
 
-        public boolean isAllowed() {
-            return !blocked;
-        }
+        public boolean isAllowed() { return !blocked; }
 
-        public int getRemainingQuota() {
-            return remainingQuota;
-        }
+        public int getRemainingQuota() { return remainingQuota; }
 
         public String getStatusMessage() {
-            if (blocked) {
-                return "⛔ REQUEST BLOCKED - Rate limit exceeded";
-            } else {
-                return "✅ REQUEST ALLOWED - Remaining quota: " + remainingQuota;
-            }
+            return blocked
+                ? "REQUEST BLOCKED - Rate limit exceeded"
+                : "REQUEST ALLOWED - Remaining quota: " + remainingQuota;
         }
     }
 }
