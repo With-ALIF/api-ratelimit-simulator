@@ -12,7 +12,8 @@ import java.util.function.Consumer;
 public class ControlPanelView extends VBox {
 
     private final ComboBox<String> clientBox = new ComboBox<>();
-    private final ComboBox<RequestType> typeBox = new ComboBox<>();
+    private final ComboBox<String> typeBox = new ComboBox<>();
+    private final ComboBox<String> statusFilterBox = new ComboBox<>();
     private final Label quotaLabel = new Label("Quota: --");
     private final Label riskLevelLabel = new Label("NORMAL");
     private final StatsPanel statsPanel;
@@ -33,13 +34,20 @@ public class ControlPanelView extends VBox {
     }
 
     private void initLayout() {
-        clientBox.getItems().addAll("CLIENT_A", "CLIENT_B", "CLIENT_C", "CLIENT_D");
+        clientBox.getItems().addAll("ALL_CLIENTS", "CLIENT_A", "CLIENT_B", "CLIENT_C", "CLIENT_D");
         clientBox.setPromptText("Select Client");
         clientBox.setMaxWidth(Double.MAX_VALUE);
 
-        typeBox.getItems().addAll(RequestType.values());
-        typeBox.setPromptText("Request Type");
+        typeBox.getItems().add("ALL");
+        for (RequestType rt : RequestType.values()) {
+            typeBox.getItems().add(rt.name());
+        }
+        typeBox.setValue("ALL");
         typeBox.setMaxWidth(Double.MAX_VALUE);
+
+        statusFilterBox.getItems().addAll("ALL", "ALLOWED", "BLOCKED");
+        statusFilterBox.setValue("ALL");
+        statusFilterBox.setMaxWidth(Double.MAX_VALUE);
 
         quotaLabel.getStyleClass().addAll("badge-pill", "badge-ok");
         riskLevelLabel.getStyleClass().addAll("badge-pill", "badge-ok");
@@ -55,7 +63,7 @@ public class ControlPanelView extends VBox {
         this.setPrefWidth(260);
         this.getChildren().addAll(
             headerBox, new Separator(),
-            clientBox, typeBox, statusBox, new Separator(),
+            clientBox, typeBox, statusFilterBox, statusBox, new Separator(),
             sendBtn, burstBtn, loadDatasetBtn, fullReportBtn, quickReportBtn, compareBtn, exportBtn, clearBtn,
             new Separator(), statsPanel
         );
@@ -69,7 +77,15 @@ public class ControlPanelView extends VBox {
     }
 
     public void setOnClientSelected(Consumer<String> consumer) { clientBox.setOnAction(e -> consumer.accept(clientBox.getValue())); }
-    public void setOnSendRequest(BiConsumer<String, RequestType> c) { sendBtn.setOnAction(e -> c.accept(clientBox.getValue(), typeBox.getValue())); }
+    public void setOnStatusFilter(Consumer<String> consumer) { statusFilterBox.setOnAction(e -> consumer.accept(statusFilterBox.getValue())); }
+    public void setOnTypeFilter(Consumer<Object> consumer) { typeBox.setOnAction(e -> consumer.accept(typeBox.getValue())); }
+    public void setOnSendRequest(BiConsumer<String, RequestType> c) {
+        sendBtn.setOnAction(e -> {
+            String val = typeBox.getValue();
+            RequestType type = (val != null && !"ALL".equals(val)) ? RequestType.valueOf(val) : null;
+            c.accept(clientBox.getValue(), type);
+        });
+    }
     public void setOnSimulateBurst(Consumer<String> consumer) { burstBtn.setOnAction(e -> consumer.accept(clientBox.getValue())); }
     public void setOnLoadDataset(Runnable action) { loadDatasetBtn.setOnAction(e -> action.run()); }
     public void setOnFullReport(Consumer<String> c) { fullReportBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
@@ -83,6 +99,8 @@ public class ControlPanelView extends VBox {
     }
     public void setSelectedClient(String clientId) { clientBox.setValue(clientId); }
     public String getSelectedClient() { return clientBox.getValue(); }
+    public String getSelectedStatus() { return statusFilterBox.getValue(); }
+    public String getSelectedType() { return typeBox.getValue() != null ? typeBox.getValue().toString() : "ALL"; }
 
     public void updateQuota(int remaining, int max) {
         quotaLabel.setText(String.format("Quota: %d/%d", remaining, max));

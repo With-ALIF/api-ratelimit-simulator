@@ -1,10 +1,12 @@
 package com.async_alpha.api_simulator.ui.dashboard;
 
+import com.async_alpha.api_simulator.service.ClientActivityTracker.ClientActivity;
 import javafx.scene.control.Alert;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
 
 import java.io.File;
+import java.util.Map;
 
 public class ReportDialogHelper {
 
@@ -14,6 +16,14 @@ public class ReportDialogHelper {
 
     public static void showReport(Window owner, String title, String content) {
         ReportViewDialog.show(owner, title, content);
+    }
+
+    public static void showComparisonTable(String title, Map<String, ClientActivity> allActivities) {
+        showComparisonTable(null, title, allActivities);
+    }
+
+    public static void showComparisonTable(Window owner, String title, Map<String, ClientActivity> allActivities) {
+        ReportViewDialog.showComparisonTable(owner, title, allActivities);
     }
 
     public static void showAlert(String message) {

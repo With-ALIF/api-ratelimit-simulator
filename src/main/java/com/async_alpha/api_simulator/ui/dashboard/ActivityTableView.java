@@ -10,12 +10,16 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ActivityTableView extends VBox {
 
     private final TableView<ActivityRecord> activityTable = new TableView<>();
     private final ObservableList<ActivityRecord> activityData = FXCollections.observableArrayList();
+    private List<ActivityRecord> allRecords = new ArrayList<>();
+    private String statusFilter = "ALL";
+    private String typeFilter = "ALL";
 
     public ActivityTableView() {
         super(10);
@@ -73,14 +77,48 @@ public class ActivityTableView extends VBox {
 
     public void setRecords(List<ActivityRecord> records) {
         if (records == null || records.isEmpty()) {
+            allRecords = new ArrayList<>();
             activityData.clear();
             return;
         }
-        activityData.setAll(records);
-        activityTable.scrollTo(activityData.size() - 1);
+        allRecords = new ArrayList<>(records);
+        applyFilters();
+    }
+
+    public void setAllRecords(List<ActivityRecord> records) {
+        if (records == null || records.isEmpty()) {
+            allRecords = new ArrayList<>();
+            activityData.clear();
+            return;
+        }
+        allRecords = new ArrayList<>(records);
+        allRecords.sort((a, b) -> b.getTimestamp().compareTo(a.getTimestamp()));
+        applyFilters();
+    }
+
+    public void setStatusFilter(String status) {
+        this.statusFilter = status != null ? status : "ALL";
+        applyFilters();
+    }
+
+    public void setTypeFilter(String type) {
+        this.typeFilter = type != null ? type : "ALL";
+        applyFilters();
+    }
+
+    private void applyFilters() {
+        activityData.clear();
+        for (ActivityRecord r : allRecords) {
+            boolean statusMatch = "ALL".equals(statusFilter) || r.getStatus().equals(statusFilter);
+            boolean typeMatch = "ALL".equals(typeFilter) || r.getRequestType().toString().equals(typeFilter);
+            if (statusMatch && typeMatch) {
+                activityData.add(r);
+            }
+        }
     }
 
     public void clear() {
+        allRecords = new ArrayList<>();
         activityData.clear();
     }
 }

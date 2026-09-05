@@ -37,6 +37,21 @@ public class DashboardActionHandler {
             ReportDialogHelper.showAlert("Please select both Client and Request Type!");
             return;
         }
+
+        if ("ALL_CLIENTS".equals(clientId)) {
+            for (String cid : new String[]{"CLIENT_A", "CLIENT_B", "CLIENT_C", "CLIENT_D"}) {
+                ServiceRequest req = new ServiceRequest(cid, type, LocalDateTime.now());
+                RateLimitEnforcer.RequestResult result = enforcer.processRequest(req);
+                activityTracker.trackRequest(req, result.isBlocked());
+                String icon = result.isBlocked() ? "⛔" : "✅";
+                logPanel.append(String.format("%s [%s] %s - %s\n",
+                    icon, req.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
+                    cid, result.isBlocked() ? "BLOCKED" : "ALLOWED"));
+            }
+            onUpdated.run();
+            return;
+        }
+
         ServiceRequest req = new ServiceRequest(clientId, type, LocalDateTime.now());
         RateLimitEnforcer.RequestResult result = enforcer.processRequest(req);
         activityTracker.trackRequest(req, result.isBlocked());
@@ -52,6 +67,27 @@ public class DashboardActionHandler {
 
     public void handleSimulateBurst(String clientId, LogPanel logPanel, Runnable onUpdated) {
         if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
+
+        if ("ALL_CLIENTS".equals(clientId)) {
+            int totalAllowed = 0, totalBlocked = 0;
+            logPanel.append("\n⚡ Burst simulation for ALL clients (20 req each, 10s)...\n");
+            for (String cid : new String[]{"CLIENT_A", "CLIENT_B", "CLIENT_C", "CLIENT_D"}) {
+                List<ServiceRequest> burst = burstGenerator.generateBurst(cid, 20, Duration.ofSeconds(10));
+                int allowed = 0, blocked = 0;
+                for (ServiceRequest req : burst) {
+                    RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
+                    activityTracker.trackRequest(req, res.isBlocked());
+                    if (res.isBlocked()) blocked++; else allowed++;
+                }
+                totalAllowed += allowed;
+                totalBlocked += blocked;
+                logPanel.append(String.format("  %s - Allowed: %d | Blocked: %d\n", cid, allowed, blocked));
+            }
+            onUpdated.run();
+            logPanel.append(String.format("⚡ Burst Done! Total: %d | Allowed: %d | Blocked: %d\n\n", 80, totalAllowed, totalBlocked));
+            return;
+        }
+
         List<ServiceRequest> burst = burstGenerator.generateBurst(clientId, 20, Duration.ofSeconds(10));
         int allowed = 0, blocked = 0;
         logPanel.append("\n⚡ Burst simulation: 20 requests in 10s for " + clientId + "...\n");
@@ -99,23 +135,67 @@ public class DashboardActionHandler {
 
     public void handleFullReport(String clientId) {
         if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
+
+        if ("ALL_CLIENTS".equals(clientId)) {
+            var allActivities = activityTracker.getAllActivities();
+            if (allActivities.isEmpty()) { ReportDialogHelper.showAlert("No data available!"); return; }
+            String report = reportGenerator.generateAllClientsFullReport(allActivities);
+            ReportDialogHelper.showReport("Full Violation Report - ALL CLIENTS", report);
+            return;
+        }
+
         RequestLog log = logger.getLog(clientId);
         AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(clientId);
         ReportDialogHelper.showReport("Full Violation Report - " + clientId, reportGenerator.generateViolationReport(abuse, log, activityTracker.getActivity(clientId)));
     }
 
-    public void handleQuickReport(String clientId, LogPanel logPanel) {
+    public void handleQuickReport(String clientId) {
         if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
-        logPanel.append("\n" + reportGenerator.generateUsageReport(clientId, activityTracker.getActivity(clientId), logger.getLog(clientId)));
+
+        if ("ALL_CLIENTS".equals(clientId)) {
+            var allActivities = activityTracker.getAllActivities();
+            if (allActivities.isEmpty()) { ReportDialogHelper.showAlert("No data available!"); return; }
+            int totalReqs = 0, totalAllowed = 0, totalBlocked = 0;
+            for (var activity : allActivities.values()) {
+                totalReqs += activity.getTotalRequests();
+                totalAllowed += activity.getAllowedRequests();
+                totalBlocked += activity.getBlockedRequests();
+            }
+            double rate = totalReqs == 0 ? 100.0 : (totalAllowed * 100.0) / totalReqs;
+            AbuseReport abuse = new AbuseReport("ALL_CLIENTS");
+            ReportDialogHelper.showReport("Quick Summary - ALL CLIENTS",
+                reportGenerator.generateAllClientsUsageReport(totalReqs, totalAllowed, totalBlocked, rate, allActivities));
+            return;
+        }
+
+        RequestLog log = logger.getLog(clientId);
+        AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(clientId);
+        ReportDialogHelper.showReport("Quick Summary - " + clientId, reportGenerator.generateUsageReport(clientId, activityTracker.getActivity(clientId), log, abuse));
     }
 
     public void handleCompareAll() {
         if (activityTracker.getAllActivities().isEmpty()) { ReportDialogHelper.showAlert("No client data available for comparison!"); return; }
-        ReportDialogHelper.showReport("Multi-Client Comparison Report", reportGenerator.generateComparisonReport(activityTracker.getAllActivities()));
+        ReportDialogHelper.showComparisonTable("Multi-Client Comparison Report", activityTracker.getAllActivities());
     }
 
     public void handleExport(String clientId, Window window, LogPanel logPanel) {
         if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
+
+        if ("ALL_CLIENTS".equals(clientId)) {
+            var allActivities = activityTracker.getAllActivities();
+            if (allActivities.isEmpty()) { ReportDialogHelper.showAlert("No data available!"); return; }
+            String report = reportGenerator.generateAllClientsFullReport(allActivities);
+            String fileName = "ALL_CLIENTS_report_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".txt";
+            File file = ReportDialogHelper.chooseExportFile(window, "ALL_CLIENTS", fileName);
+            if (file != null) {
+                try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
+                    writer.write(report);
+                    logPanel.append("Report exported to: " + file.getName() + "\n");
+                } catch (Exception e) { ReportDialogHelper.showAlert("Error exporting report: " + e.getMessage()); }
+            }
+            return;
+        }
+
         RequestLog log = logger.getLog(clientId);
         AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(clientId);
         String report = reportGenerator.generateViolationReport(abuse, log, activityTracker.getActivity(clientId));
@@ -124,7 +204,7 @@ public class DashboardActionHandler {
         if (file != null) {
             try (FileWriter writer = new FileWriter(file, StandardCharsets.UTF_8)) {
                 writer.write(report);
-                logPanel.append("✅ Report exported to: " + file.getName() + "\n");
+                logPanel.append("Report exported to: " + file.getName() + "\n");
             } catch (Exception e) { ReportDialogHelper.showAlert("Error exporting report: " + e.getMessage()); }
         }
     }

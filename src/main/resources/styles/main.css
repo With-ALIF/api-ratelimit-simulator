@@ -98,6 +98,11 @@
     -fx-text-fill: #94a3b8;
     -fx-font-weight: bold;
     -fx-font-size: 12px;
+    -fx-alignment: CENTER;
+}
+
+.table-view .column-header .label {
+    -fx-alignment: CENTER;
 }
 
 .table-view .table-cell {

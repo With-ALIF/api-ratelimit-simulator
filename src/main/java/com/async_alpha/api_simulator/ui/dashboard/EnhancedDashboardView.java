@@ -28,6 +28,7 @@ public class EnhancedDashboardView extends BorderPane {
     private final ActivityTableView activityTable = new ActivityTableView();
     private final LogPanel logPanel = new LogPanel();
     private Timeline quotaRefreshTimeline;
+    private boolean showingAllClients = false;
 
     public EnhancedDashboardView() {
         enforcer = new RateLimitEnforcer(5, Duration.ofSeconds(10), logger);
@@ -44,6 +45,7 @@ public class EnhancedDashboardView extends BorderPane {
         setupEvents();
 
         quotaRefreshTimeline = new Timeline(new KeyFrame(javafx.util.Duration.seconds(1), e -> {
+            if (showingAllClients) return;
             String selected = controlPanel.getSelectedClient();
             if (selected != null) {
                 controlPanel.updateQuota(enforcer.getRemainingQuota(selected), enforcer.getMaxRequests());
@@ -79,11 +81,13 @@ public class EnhancedDashboardView extends BorderPane {
 
     private void setupEvents() {
         controlPanel.setOnClientSelected(this::refreshClientViews);
+        controlPanel.setOnStatusFilter(this::handleFilterChange);
+        controlPanel.setOnTypeFilter(this::handleFilterChange);
         controlPanel.setOnSendRequest((c, t) -> actionHandler.handleSendRequest(c, t, logPanel, this::refreshClientViews));
         controlPanel.setOnSimulateBurst(c -> actionHandler.handleSimulateBurst(c, logPanel, this::refreshClientViews));
         controlPanel.setOnLoadDataset(() -> actionHandler.handleLoadDataset(getScene().getWindow(), controlPanel, logPanel, this::refreshClientViews));
         controlPanel.setOnFullReport(actionHandler::handleFullReport);
-        controlPanel.setOnQuickReport(c -> actionHandler.handleQuickReport(c, logPanel));
+        controlPanel.setOnQuickReport(actionHandler::handleQuickReport);
         controlPanel.setOnCompare(actionHandler::handleCompareAll);
         controlPanel.setOnExport(c -> actionHandler.handleExport(c, getScene().getWindow(), logPanel));
         controlPanel.setOnClearHistory(this::handleClearHistory);
@@ -112,6 +116,33 @@ public class EnhancedDashboardView extends BorderPane {
             return;
         }
 
+        if ("ALL_CLIENTS".equals(clientId)) {
+            showingAllClients = true;
+            var allActivities = activityTracker.getAllActivities();
+            if (allActivities.isEmpty()) {
+                controlPanel.resetQuota();
+                statsPanel.resetStats();
+                controlPanel.updateRiskLevel(ViolationLevel.NORMAL);
+                activityTable.clear();
+                return;
+            }
+            List<ClientActivityTracker.ActivityRecord> allRecords = new java.util.ArrayList<>();
+            int totalReqs = 0, totalAllowed = 0, totalBlocked = 0;
+            for (var activity : allActivities.values()) {
+                allRecords.addAll(activity.getRecords());
+                totalReqs += activity.getTotalRequests();
+                totalAllowed += activity.getAllowedRequests();
+                totalBlocked += activity.getBlockedRequests();
+            }
+            activityTable.setAllRecords(allRecords);
+            applyFilters();
+            statsPanel.updateStats(totalReqs, totalAllowed, totalBlocked);
+            controlPanel.resetQuota();
+            controlPanel.updateRiskLevel(ViolationLevel.NORMAL);
+            return;
+        }
+
+        showingAllClients = false;
         controlPanel.updateQuota(enforcer.getRemainingQuota(clientId), enforcer.getMaxRequests());
         statsPanel.updateStats(activityTracker.getActivity(clientId));
 
@@ -121,5 +152,15 @@ public class EnhancedDashboardView extends BorderPane {
 
         var activity = activityTracker.getActivity(clientId);
         activityTable.setRecords(activity != null ? activity.getRecords() : null);
+        applyFilters();
+    }
+
+    private void handleFilterChange(Object ignored) {
+        refreshClientViews();
+    }
+
+    private void applyFilters() {
+        activityTable.setStatusFilter(controlPanel.getSelectedStatus());
+        activityTable.setTypeFilter(controlPanel.getSelectedType());
     }
 }

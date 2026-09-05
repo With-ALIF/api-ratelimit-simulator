@@ -68,6 +68,23 @@ public class StatsPanel extends VBox {
         }
     }
 
+    public void updateStats(int total, int allowed, int blocked) {
+        totalReqLabel.setText(String.valueOf(total));
+        allowedReqLabel.setText(String.valueOf(allowed));
+        blockedReqLabel.setText(String.valueOf(blocked));
+        double successRate = total == 0 ? 100.0 : (allowed * 100.0) / total;
+        successRateLabel.setText(String.format("%.1f%%", successRate));
+
+        successRateLabel.getStyleClass().removeAll("status-ok", "status-warning", "status-danger");
+        if (successRate >= 80) {
+            successRateLabel.getStyleClass().add("status-ok");
+        } else if (successRate >= 50) {
+            successRateLabel.getStyleClass().add("status-warning");
+        } else {
+            successRateLabel.getStyleClass().add("status-danger");
+        }
+    }
+
     public void resetStats() {
         totalReqLabel.setText("0");
         allowedReqLabel.setText("0");
