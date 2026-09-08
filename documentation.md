@@ -131,14 +131,14 @@ The domain layer models the entities participating in the simulated API ecosyste
 
 ### 2.2 Domain Entities
 
-#### `Client` (`com.async_alpha.api_simulator.model.Client`)
+#### `Client` (`com.runtime_crew.api_simulator.model.Client`)
 - **Purpose:** Represents an identifiable consumer of the API (e.g., microservice, mobile client, web browser, external partner).
 - **Invariants:**
   - `clientId`: Non-null, non-empty, trimmed unique identifier.
   - `name`: Fallback to `clientId` if omitted or empty.
 - **Identity:** Equality and hash codes are based strictly on `clientId`.
 
-#### `ServiceRequest` (`com.async_alpha.api_simulator.model.ServiceRequest`)
+#### `ServiceRequest` (`com.runtime_crew.api_simulator.model.ServiceRequest`)
 - **Purpose:** Represents an individual, timestamped invocation of an API endpoint.
 - **Attributes:**
   - `clientId`: Identifies the client making the request.
@@ -146,13 +146,13 @@ The domain layer models the entities participating in the simulated API ecosyste
   - `timestamp`: Temporal mark of request arrival (`java.time.LocalDateTime`).
 - **Formatting:** Provides standardized `HH:mm:ss` representation via `getFormattedTime()`.
 
-#### `RequestLog` (`com.async_alpha.api_simulator.model.RequestLog`)
+#### `RequestLog` (`com.runtime_crew.api_simulator.model.RequestLog`)
 - **Purpose:** Maintains the sequential ledger of requests originating from a specific client.
 - **Features:**
   - Thread-safe defensive copying through `Collections.unmodifiableList(requests)`.
   - Utility methods: `getRequestCount()`, `isEmpty()`, and `clear()`.
 
-#### `RequestType` (`com.async_alpha.api_simulator.model.RequestType`)
+#### `RequestType` (`com.runtime_crew.api_simulator.model.RequestType`)
 Enumerates operations mapped to real-world software API actions:
 | Enum Constant | Display Name | Semantic Real-World Operation |
 | :--- | :--- | :--- |
@@ -161,7 +161,7 @@ Enumerates operations mapped to real-world software API actions:
 | `UPDATE` | Update | Profile modification, settings update, state transition |
 | `DELETE` | Delete | Resource removal, account deactivation, batch cancellation |
 
-#### `ViolationLevel` (`com.async_alpha.api_simulator.model.ViolationLevel`)
+#### `ViolationLevel` (`com.runtime_crew.api_simulator.model.ViolationLevel`)
 Represents the severity state of client access behavior:
 | Level | Display Name | Operational Meaning |
 | :--- | :--- | :--- |
@@ -169,7 +169,7 @@ Represents the severity state of client access behavior:
 | `WARNING` | Warning | Suspicious patterns, anomalous spikes, or near-capacity consumption; monitoring advised. |
 | `CRITICAL` | Critical | Severe rate limit exhaustion, burst flooding, or bot activity; rate limiting or lockout mandated. |
 
-#### `AbuseReport` (`com.async_alpha.api_simulator.model.AbuseReport`)
+#### `AbuseReport` (`com.runtime_crew.api_simulator.model.AbuseReport`)
 - **Purpose:** Collects audit findings and violation flags discovered during policy inspection.
 - **Key Logic:**
   - `setLevel(ViolationLevel newLevel)`: Enforces non-downgrade guarantees. Once a report reaches `CRITICAL`, it cannot transition down to `WARNING` or `NORMAL`. Once it reaches `WARNING`, it cannot revert to `NORMAL`.
@@ -257,7 +257,7 @@ Employs three statistical heuristics to uncover automated scripts and bots:
 └──────────────────────────┴───────────────────────────────────────────┘
 ```
 
-### 4.1 RateLimitEnforcer (`com.async_alpha.api_simulator.service.RateLimitEnforcer`)
+### 4.1 RateLimitEnforcer (`com.runtime_crew.api_simulator.service.RateLimitEnforcer`)
 The real-time gatekeeper for simulated requests.
 - `shouldBlock(ServiceRequest request)`: Checks if recent requests within `timeWindow` (10s) meet or exceed `maxRequests` (5).
 - `processRequest(ServiceRequest request)`:
@@ -267,26 +267,26 @@ The real-time gatekeeper for simulated requests.
 - `getRemainingQuota(String clientId)`: Returns the available requests left in the current sliding window.
 - `getTimeUntilReset(String clientId)`: Calculates the exact `java.time.Duration` until the oldest request in the window expires, restoring quota.
 
-### 4.2 ClientActivityTracker (`com.async_alpha.api_simulator.service.ClientActivityTracker`)
+### 4.2 ClientActivityTracker (`com.runtime_crew.api_simulator.service.ClientActivityTracker`)
 Maintains per-client statistics:
 - Total Requests, Allowed Requests, Blocked Requests.
 - Success Rate calculation:
   $$\text{Success Rate} = \left(\frac{\text{Allowed Requests}}{\text{Total Requests}}\right) \times 100\%$$
 - Stores chronological `ActivityRecord` instances tracking timestamps, types, and admission decisions (`ALLOWED` vs `BLOCKED`).
 
-### 4.3 RateLimitAnalyzer (`com.async_alpha.api_simulator.service.RateLimitAnalyzer`)
+### 4.3 RateLimitAnalyzer (`com.runtime_crew.api_simulator.service.RateLimitAnalyzer`)
 Orchestrates offline and retrospective abuse evaluations:
 - Extracts recent traffic slices (default: last 10 seconds).
 - Passes the filtered log to each registered `RatePolicy`.
 - Returns an aggregated `AbuseReport`.
 
-### 4.4 BurstTrafficGenerator (`com.async_alpha.api_simulator.service.BurstTrafficGenerator`)
+### 4.4 BurstTrafficGenerator (`com.runtime_crew.api_simulator.service.BurstTrafficGenerator`)
 Generates high-speed request bursts for stress-testing policies:
 - Parameters: `clientId`, `requestCount` (default: 20), `totalDuration` (default: 10s).
 - Linearly calculates millisecond offsets across the duration window.
 - Alternates `RequestType` values across iterations (`READ`, `WRITE`, `UPDATE`, `DELETE`) to simulate real-world diverse traffic.
 
-### 4.5 DatasetLoader (`com.async_alpha.api_simulator.service.DatasetLoader`)
+### 4.5 DatasetLoader (`com.runtime_crew.api_simulator.service.DatasetLoader`)
 Robust parser capable of loading batch traffic logs from external files or strings.
 - **Delimiter Support:** Detects and splits on commas (`,`), semicolons (`;`), or whitespace (`\s+`).
 - **Header & Comment Handling:** Skips empty lines, comment lines starting with `#` or `//`, and header lines containing `timestamp` or `clientId`.
@@ -562,7 +562,7 @@ Automated tests are implemented using **JUnit Jupiter (JUnit 5)**.
 ### 9.1 Test Classes & Coverage
 
 ```
-src/test/java/com/async_alpha/api_simulator/service/
+src/test/java/com/runtime_crew/api_simulator/service/
 ├── BurstTrafficGeneratorTest.java
 ├── DatasetLoaderTest.java
 └── EnhancedReportGeneratorTest.java
@@ -582,11 +582,11 @@ mvn test
 
 Sample output:
 ```
-[INFO] Running com.async_alpha.api_simulator.service.BurstTrafficGeneratorTest
+[INFO] Running com.runtime_crew.api_simulator.service.BurstTrafficGeneratorTest
 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
-[INFO] Running com.async_alpha.api_simulator.service.DatasetLoaderTest
+[INFO] Running com.runtime_crew.api_simulator.service.DatasetLoaderTest
 [INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0
-[INFO] Running com.async_alpha.api_simulator.service.EnhancedReportGeneratorTest
+[INFO] Running com.runtime_crew.api_simulator.service.EnhancedReportGeneratorTest
 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
 [INFO] -------------------------------------------------------
 [INFO] Results:
