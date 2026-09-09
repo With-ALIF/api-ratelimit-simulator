@@ -5,22 +5,42 @@ import com.runtime_crew.api_simulator.model.ServiceRequest;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class RateLimitEnforcer {
 
     private final int maxRequests;
     private final Duration timeWindow;
+    private final Duration blockDuration;
     private final RequestLogger requestLogger;
+    private final Map<String, LocalDateTime> blockStartTimes = new HashMap<>();
 
     public RateLimitEnforcer(int maxRequests, Duration timeWindow, RequestLogger requestLogger) {
+        this(maxRequests, timeWindow, Duration.ofSeconds(3), requestLogger);
+    }
+
+    public RateLimitEnforcer(int maxRequests, Duration timeWindow, Duration blockDuration, RequestLogger requestLogger) {
         this.maxRequests = maxRequests;
         this.timeWindow = timeWindow;
+        this.blockDuration = blockDuration;
         this.requestLogger = requestLogger;
     }
 
     public boolean shouldBlock(ServiceRequest request) {
-        RequestLog log = requestLogger.getLog(request.getClientId());
+        String clientId = request.getClientId();
+        LocalDateTime now = LocalDateTime.now();
+
+        LocalDateTime blockStart = blockStartTimes.get(clientId);
+        if (blockStart != null) {
+            if (Duration.between(blockStart, now).compareTo(blockDuration) < 0) {
+                return true;
+            }
+            blockStartTimes.remove(clientId);
+        }
+
+        RequestLog log = requestLogger.getLog(clientId);
         if (log == null || log.getRequests().isEmpty()) {
             return false;
         }
@@ -33,7 +53,12 @@ public class RateLimitEnforcer {
             })
             .count();
 
-        return recentCount >= maxRequests;
+        if (recentCount >= maxRequests) {
+            blockStartTimes.put(clientId, now);
+            return true;
+        }
+
+        return false;
     }
 
     public RequestResult processRequest(ServiceRequest request) {
@@ -45,6 +70,17 @@ public class RateLimitEnforcer {
     }
 
     public int getRemainingQuota(String clientId) {
+        LocalDateTime blockStart = blockStartTimes.get(clientId);
+        if (blockStart != null) {
+            LocalDateTime now = LocalDateTime.now();
+            if (Duration.between(blockStart, now).compareTo(blockDuration) < 0) {
+                return 0;
+            }
+            blockStartTimes.remove(clientId);
+            requestLogger.clearClient(clientId);
+            return maxRequests;
+        }
+
         RequestLog log = requestLogger.getLog(clientId);
         if (log == null || log.getRequests().isEmpty()) {
             return maxRequests;
@@ -71,6 +107,13 @@ public class RateLimitEnforcer {
             return Duration.ZERO;
         }
 
+        LocalDateTime blockStart = blockStartTimes.get(clientId);
+        if (blockStart != null) {
+            Duration elapsed = Duration.between(blockStart, LocalDateTime.now());
+            Duration remaining = blockDuration.minus(elapsed);
+            if (!remaining.isNegative()) return remaining;
+        }
+
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime oldestInWindow = now.minus(timeWindow);
 
@@ -93,6 +136,10 @@ public class RateLimitEnforcer {
 
     public Duration getTimeWindow() {
         return timeWindow;
+    }
+
+    public Duration getBlockDuration() {
+        return blockDuration;
     }
 
     public static class RequestResult {

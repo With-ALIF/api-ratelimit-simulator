@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Random;
 
 public class DashboardActionHandler {
 
@@ -22,6 +23,7 @@ public class DashboardActionHandler {
     private final EnhancedReportGenerator reportGenerator;
     private final DatasetLoader datasetLoader = new DatasetLoader();
     private final BurstTrafficGenerator burstGenerator = new BurstTrafficGenerator();
+    private final Random random = new Random();
 
     public DashboardActionHandler(RequestLogger logger, RateLimitEnforcer enforcer,
                                   ClientActivityTracker activityTracker, RateLimitAnalyzer analyzer,
@@ -34,9 +36,14 @@ public class DashboardActionHandler {
     }
 
     public void handleSendRequest(String clientId, RequestType type, LogPanel logPanel, Runnable onUpdated) {
-        if (clientId == null || type == null) {
-            ReportDialogHelper.showAlert("Please select both Client and Request Type!");
+        if (clientId == null) {
+            ReportDialogHelper.showAlert("Please select a client!");
             return;
+        }
+
+        if (type == null) {
+            RequestType[] types = RequestType.values();
+            type = types[random.nextInt(types.length)];
         }
 
         if ("ALL_CLIENTS".equals(clientId)) {

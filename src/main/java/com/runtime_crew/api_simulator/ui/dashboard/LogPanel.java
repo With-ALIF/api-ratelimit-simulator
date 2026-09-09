@@ -19,7 +19,7 @@ public class LogPanel extends VBox {
 
         logArea.setEditable(false);
         logArea.getStyleClass().add("log-area");
-        logArea.setPrefRowCount(6);
+        logArea.setPrefRowCount(4);
         logArea.setWrapText(true);
 
         this.getStyleClass().add("card");

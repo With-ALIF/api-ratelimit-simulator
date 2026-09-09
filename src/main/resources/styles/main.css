@@ -313,3 +313,94 @@
     -fx-font-size: 15px;
     -fx-font-weight: bold;
 }
+
+.traffic-chart {
+    -fx-background-color: transparent;
+}
+
+.traffic-chart .chart-plot-background {
+    -fx-background-color: #0f172a;
+}
+
+.traffic-chart .chart-alternative-row-fill {
+    -fx-background-color: transparent;
+}
+
+.traffic-chart .chart-alternative-column-fill {
+    -fx-background-color: transparent;
+}
+
+.traffic-chart .chart-horizontal-grid-lines {
+    -fx-stroke: #1e293b;
+    -fx-stroke-dash-array: 2 4;
+}
+
+.traffic-chart .chart-vertical-grid-lines {
+    -fx-stroke: #1e293b;
+    -fx-stroke-dash-array: 2 4;
+}
+
+.traffic-chart .chart-horizontal-zero-line {
+    -fx-stroke: #334155;
+}
+
+.traffic-chart .chart-vertical-zero-line {
+    -fx-stroke: #334155;
+}
+
+.traffic-chart .chart-series-line {
+    -fx-stroke-width: 2;
+}
+
+.traffic-chart .chart-series-line.default-color0 {
+    -fx-stroke: #22c55e;
+}
+
+.traffic-chart .chart-series-line.default-color1 {
+    -fx-stroke: #ef4444;
+}
+
+.traffic-chart .chart-symbol {
+    -fx-background-color: #22c55e;
+    -fx-padding: 2;
+}
+
+.traffic-chart .chart-symbol.default-color0 {
+    -fx-background-color: #22c55e;
+}
+
+.traffic-chart .chart-symbol.default-color1 {
+    -fx-background-color: #ef4444;
+}
+
+.traffic-chart .chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 4 0 0 0;
+}
+
+.traffic-chart .chart-legend-item {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 11px;
+}
+
+.traffic-chart .chart-legend-item-symbol {
+    -fx-padding: 3;
+}
+
+.traffic-chart .axis {
+    -fx-tick-label-fill: #64748b;
+    -fx-font-size: 10px;
+}
+
+.traffic-chart .axis-label {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 11px;
+}
+
+.traffic-chart .axis-tick-mark {
+    -fx-stroke: #334155;
+}
+
+.traffic-chart .axis-zero-line {
+    -fx-stroke: #334155;
+}
