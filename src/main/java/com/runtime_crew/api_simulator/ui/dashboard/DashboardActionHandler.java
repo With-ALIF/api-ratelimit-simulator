@@ -17,13 +17,15 @@ import java.util.Random;
 public class DashboardActionHandler {
 
     private final RequestLogger logger;
-    private final RateLimitEnforcer enforcer;
+    private RateLimitEnforcer enforcer;
     private final ClientActivityTracker activityTracker;
-    private final RateLimitAnalyzer analyzer;
+    private RateLimitAnalyzer analyzer;
     private final EnhancedReportGenerator reportGenerator;
     private final DatasetLoader datasetLoader = new DatasetLoader();
     private final BurstTrafficGenerator burstGenerator = new BurstTrafficGenerator();
     private final Random random = new Random();
+    private int burstCount = 20;
+    private int burstDuration = 10;
 
     public DashboardActionHandler(RequestLogger logger, RateLimitEnforcer enforcer,
                                   ClientActivityTracker activityTracker, RateLimitAnalyzer analyzer,
@@ -78,9 +80,9 @@ public class DashboardActionHandler {
 
         if ("ALL_CLIENTS".equals(clientId)) {
             int totalAllowed = 0, totalBlocked = 0;
-            logPanel.append("\n⚡ Burst simulation for ALL clients (20 req each, 10s)...\n");
+            logPanel.append(String.format("\n⚡ Burst simulation for ALL clients (%d req each, %ds)...\n", burstCount, burstDuration));
             for (String cid : new String[]{"CLIENT_A", "CLIENT_B", "CLIENT_C", "CLIENT_D"}) {
-                List<ServiceRequest> burst = burstGenerator.generateBurst(cid, 20, Duration.ofSeconds(10));
+                List<ServiceRequest> burst = burstGenerator.generateBurst(cid, burstCount, Duration.ofSeconds(burstDuration));
                 int allowed = 0, blocked = 0;
                 for (ServiceRequest req : burst) {
                     RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
@@ -92,13 +94,13 @@ public class DashboardActionHandler {
                 logPanel.append(String.format("  %s - Allowed: %d | Blocked: %d\n", cid, allowed, blocked));
             }
             onUpdated.run();
-            logPanel.append(String.format("⚡ Burst Done! Total: %d | Allowed: %d | Blocked: %d\n\n", 80, totalAllowed, totalBlocked));
+            logPanel.append(String.format("⚡ Burst Done! Total: %d | Allowed: %d | Blocked: %d\n\n", burstCount * 4, totalAllowed, totalBlocked));
             return;
         }
 
-        List<ServiceRequest> burst = burstGenerator.generateBurst(clientId, 20, Duration.ofSeconds(10));
+        List<ServiceRequest> burst = burstGenerator.generateBurst(clientId, burstCount, Duration.ofSeconds(burstDuration));
         int allowed = 0, blocked = 0;
-        logPanel.append("\n⚡ Burst simulation: 20 requests in 10s for " + clientId + "...\n");
+        logPanel.append(String.format("\n⚡ Burst simulation: %d requests in %ds for %s...\n", burstCount, burstDuration, clientId));
 
         for (ServiceRequest req : burst) {
             RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
@@ -109,7 +111,7 @@ public class DashboardActionHandler {
                 req.getClientId(), req.getRequestType(), res.isBlocked() ? "BLOCKED" : "ALLOWED"));
         }
         onUpdated.run();
-        logPanel.append(String.format("⚡ Burst Done! Total: 20 | Allowed: %d | Blocked: %d\n\n", allowed, blocked));
+        logPanel.append(String.format("⚡ Burst Done! Total: %d | Allowed: %d | Blocked: %d\n\n", burstCount, allowed, blocked));
     }
 
     public void handleLoadDataset(Window window, ControlPanelView controlPanel, LogPanel logPanel, Runnable onUpdated) {
@@ -232,22 +234,17 @@ public class DashboardActionHandler {
 
         TextField clientIdField = new TextField();
         clientIdField.setPromptText("e.g. CLIENT_E");
-        TextField clientNameField = new TextField();
-        clientNameField.setPromptText("e.g. Payment Gateway Service");
 
         grid.add(new Label("Client ID:"), 0, 0);
         grid.add(clientIdField, 1, 0);
-        grid.add(new Label("Client Name:"), 0, 1);
-        grid.add(clientNameField, 1, 1);
 
         dialog.getDialogPane().setContent(grid);
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == registerButtonType) {
                 String id = clientIdField.getText() != null ? clientIdField.getText().trim() : "";
-                String name = clientNameField.getText() != null ? clientNameField.getText().trim() : "";
                 if (!id.isEmpty()) {
-                    return new Client(id, name.isEmpty() ? id : name);
+                    return new Client(id, id);
                 }
             }
             return null;
@@ -259,5 +256,18 @@ public class DashboardActionHandler {
             controlPanel.setSelectedClient(client.getClientId());
             logPanel.append(String.format("Registered new API client: %s (%s)\n", client.getClientId(), client.getName()));
         });
+    }
+
+    public void updateEnforcer(RateLimitEnforcer enforcer) {
+        this.enforcer = enforcer;
+    }
+
+    public void updateAnalyzer(RateLimitAnalyzer analyzer) {
+        this.analyzer = analyzer;
+    }
+
+    public void updateBurstConfig(int burstCount, int burstDuration) {
+        this.burstCount = burstCount;
+        this.burstDuration = burstDuration;
     }
 }

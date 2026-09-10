@@ -16,17 +16,20 @@ public class ControlPanelView extends VBox {
     private final ComboBox<String> statusFilterBox = new ComboBox<>();
     private final Label quotaLabel = new Label("Quota: --");
     private final Label riskLevelLabel = new Label("NORMAL");
+    private final Label blockLabel = new Label();
     private final StatsPanel statsPanel;
 
     private final Button sendBtn = createButton("Send Request", "btn-primary");
-    private final Button burstBtn = createButton("Simulate Burst (20 Req / 10s)", "btn-warning");
+    private final Button burstBtn = createButton("Simulate Burst", "btn-warning");
     private final Button loadDatasetBtn = createButton("Load Dataset (.txt/.csv)", "btn-accent");
     private final Button registerBtn = createButton("+ Register Client", "");
     private final Button fullReportBtn = createButton("Full Report", "btn-success");
     private final Button quickReportBtn = createButton("Quick Summary", "");
+    private final Button barChartBtn = createButton("Bar Chart", "btn-accent");
     private final Button compareBtn = createButton("Compare All", "");
     private final Button exportBtn = createButton("Export Report", "");
     private final Button clearBtn = createButton("Clear History", "btn-danger");
+    private final Button settingsBtn = createButton("Settings", "");
 
     public ControlPanelView(StatsPanel statsPanel) {
         super(12);
@@ -65,7 +68,10 @@ public class ControlPanelView extends VBox {
         riskLevelLabel.getStyleClass().addAll("badge-pill", "badge-ok");
         HBox statusBox = new HBox(8, quotaLabel, riskLevelLabel);
         statusBox.setAlignment(Pos.CENTER);
-        VBox statusSection = new VBox(4, statusHeader, statusBox);
+        blockLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 12px; -fx-text-fill: #ef4444;");
+        blockLabel.setVisible(false);
+        blockLabel.setManaged(false);
+        VBox statusSection = new VBox(4, statusHeader, statusBox, blockLabel);
 
         VBox headerBox = new VBox(2, new Label("Control Panel"), new Label("Traffic & Rate-Limit Controller"));
         headerBox.getChildren().get(0).setStyle("-fx-font-weight: bold; -fx-font-size: 16px; -fx-text-fill: #ffffff;");
@@ -83,8 +89,8 @@ public class ControlPanelView extends VBox {
             headerBox, new Separator(),
             clientSection, typeSection, filterSection, statusSection, new Separator(),
             actionsHeader, sendBtn, burstBtn, loadDatasetBtn, registerBtn, new Separator(),
-            reportsHeader, fullReportBtn, quickReportBtn, compareBtn, exportBtn, clearBtn,
-            new Separator(), statsPanel
+            reportsHeader, fullReportBtn, quickReportBtn, barChartBtn, compareBtn, exportBtn, clearBtn, new Separator(),
+            settingsBtn, statsPanel
         );
     }
 
@@ -111,8 +117,14 @@ public class ControlPanelView extends VBox {
     public void setOnFullReport(Consumer<String> c) { fullReportBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
     public void setOnQuickReport(Consumer<String> c) { quickReportBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
     public void setOnCompare(Runnable action) { compareBtn.setOnAction(e -> action.run()); }
+    public void setOnBarChart(Runnable action) { barChartBtn.setOnAction(e -> action.run()); }
     public void setOnExport(Consumer<String> c) { exportBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
     public void setOnClearHistory(Consumer<String> c) { clearBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
+    public void setOnSettings(Runnable action) { settingsBtn.setOnAction(e -> action.run()); }
+
+    public void updateBurstLabel(int count, int duration) {
+        burstBtn.setText(String.format("Simulate Burst (%d Req / %ds)", count, duration));
+    }
 
     public void addClientIfAbsent(String clientId) {
         if (!clientBox.getItems().contains(clientId)) clientBox.getItems().add(clientId);
@@ -142,5 +154,21 @@ public class ControlPanelView extends VBox {
         if (level == null || level == ViolationLevel.NORMAL) riskLevelLabel.getStyleClass().add("badge-ok");
         else if (level == ViolationLevel.WARNING) riskLevelLabel.getStyleClass().add("badge-warning");
         else riskLevelLabel.getStyleClass().add("badge-danger");
+    }
+
+    public void updateBlockCountdown(long secondsRemaining) {
+        if (secondsRemaining > 0) {
+            blockLabel.setText(String.format("BLOCKED - Waiting %ds", secondsRemaining));
+            blockLabel.setVisible(true);
+            blockLabel.setManaged(true);
+        } else {
+            blockLabel.setVisible(false);
+            blockLabel.setManaged(false);
+        }
+    }
+
+    public void clearBlockCountdown() {
+        blockLabel.setVisible(false);
+        blockLabel.setManaged(false);
     }
 }

@@ -404,3 +404,77 @@
 .traffic-chart .axis-zero-line {
     -fx-stroke: #334155;
 }
+
+.bar-chart-dark {
+    -fx-background-color: transparent;
+}
+
+.bar-chart-dark .chart-plot-background {
+    -fx-background-color: #0f172a;
+}
+
+.bar-chart-dark .chart-alternative-row-fill {
+    -fx-background-color: transparent;
+}
+
+.bar-chart-dark .chart-alternative-column-fill {
+    -fx-background-color: transparent;
+}
+
+.bar-chart-dark .chart-horizontal-grid-lines {
+    -fx-stroke: #1e293b;
+    -fx-stroke-dash-array: 2 4;
+}
+
+.bar-chart-dark .chart-vertical-grid-lines {
+    -fx-stroke: #1e293b;
+    -fx-stroke-dash-array: 2 4;
+}
+
+.bar-chart-dark .chart-horizontal-zero-line {
+    -fx-stroke: #334155;
+}
+
+.bar-chart-dark .chart-vertical-zero-line {
+    -fx-stroke: #334155;
+}
+
+.bar-chart-dark .default-color0.chart-bar {
+    -fx-bar-fill: #22c55e;
+}
+
+.bar-chart-dark .default-color1.chart-bar {
+    -fx-bar-fill: #dc2626;
+}
+
+.bar-chart-dark .chart-legend {
+    -fx-background-color: transparent;
+    -fx-padding: 4 0 0 0;
+}
+
+.bar-chart-dark .chart-legend-item {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 11px;
+}
+
+.bar-chart-dark .chart-legend-item-symbol {
+    -fx-padding: 3;
+}
+
+.bar-chart-dark .axis {
+    -fx-tick-label-fill: #64748b;
+    -fx-font-size: 10px;
+}
+
+.bar-chart-dark .axis-label {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 11px;
+}
+
+.bar-chart-dark .axis-tick-mark {
+    -fx-stroke: #334155;
+}
+
+.bar-chart-dark .axis-zero-line {
+    -fx-stroke: #334155;
+}

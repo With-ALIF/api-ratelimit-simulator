@@ -6,11 +6,14 @@ import com.runtime_crew.api_simulator.service.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 
 import java.util.List;
@@ -18,9 +21,9 @@ import java.util.List;
 public class EnhancedDashboardView extends BorderPane {
 
     private final RequestLogger logger = new RequestLogger();
-    private final RateLimitEnforcer enforcer;
+    private RateLimitEnforcer enforcer;
     private final ClientActivityTracker activityTracker = new ClientActivityTracker();
-    private final RateLimitAnalyzer analyzer;
+    private RateLimitAnalyzer analyzer;
     private final EnhancedReportGenerator reportGenerator = new EnhancedReportGenerator();
     private final DashboardActionHandler actionHandler;
 
@@ -30,6 +33,11 @@ public class EnhancedDashboardView extends BorderPane {
     private final TrafficChartView trafficChart;
     private final LogPanel logPanel = new LogPanel();
     private final Timeline statusTimer;
+    private int burstCount = 20;
+    private int burstDuration = 10;
+    private int currentMaxRequests = 10;
+    private int currentTimeWindow = 10;
+    private int currentBlockDuration = 3;
 
     public EnhancedDashboardView() {
         enforcer = new RateLimitEnforcer(10, java.time.Duration.ofSeconds(10), java.time.Duration.ofSeconds(3), logger);
@@ -88,6 +96,8 @@ public class EnhancedDashboardView extends BorderPane {
         controlPanel.setOnCompare(actionHandler::handleCompareAll);
         controlPanel.setOnExport(c -> actionHandler.handleExport(c, getScene().getWindow(), logPanel));
         controlPanel.setOnClearHistory(this::handleClearHistory);
+        controlPanel.setOnBarChart(this::handleBarChart);
+        controlPanel.setOnSettings(this::handleSettings);
     }
 
     private void handleClearHistory(String clientId) {
@@ -109,6 +119,70 @@ public class EnhancedDashboardView extends BorderPane {
         controlPanel.updateRiskLevel(ViolationLevel.NORMAL);
     }
 
+    private void handleBarChart() {
+        BarChartView barChartView = new BarChartView(activityTracker, controlPanel::getSelectedClient);
+
+        Stage chartStage = new Stage();
+        chartStage.initModality(Modality.NONE);
+        chartStage.setTitle("Bar Chart - Request Distribution");
+
+        Scene scene = new Scene(barChartView, 650, 380);
+        scene.getStylesheets().add(
+            getClass().getResource("/styles/main.css").toExternalForm()
+        );
+        chartStage.setScene(scene);
+        chartStage.show();
+    }
+
+    private void handleSettings() {
+        SettingsView settingsView = new SettingsView(currentMaxRequests, currentTimeWindow, currentBlockDuration, burstCount, burstDuration);
+
+        Stage settingsStage = new Stage();
+        settingsStage.initModality(Modality.APPLICATION_MODAL);
+        settingsStage.setTitle("Settings");
+
+        settingsView.setOnSave(() -> applySettings(settingsView, settingsStage));
+
+        Scene scene = new Scene(settingsView, 400, 380);
+        scene.getStylesheets().add(
+            getClass().getResource("/styles/main.css").toExternalForm()
+        );
+        settingsStage.setScene(scene);
+        settingsStage.showAndWait();
+    }
+
+    private void applySettings(SettingsView settingsView, Stage settingsStage) {
+        currentMaxRequests = settingsView.getMaxRequests();
+        currentTimeWindow = settingsView.getTimeWindow();
+        currentBlockDuration = settingsView.getBlockDuration();
+        burstCount = settingsView.getBurstCount();
+        burstDuration = settingsView.getBurstDuration();
+
+        enforcer = new RateLimitEnforcer(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow), java.time.Duration.ofSeconds(currentBlockDuration), logger);
+        analyzer = new RateLimitAnalyzer(List.of(
+            new FixedWindowPolicy(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow)),
+            new SlidingWindowPolicy(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow)),
+            new BurstDetectionPolicy(4, java.time.Duration.ofSeconds(3)),
+            new AbnormalPatternPolicy(3),
+            new RetryAbusePolicy(8, java.time.Duration.ofSeconds(2))
+        ));
+
+        actionHandler.updateEnforcer(enforcer);
+        actionHandler.updateAnalyzer(analyzer);
+        actionHandler.updateBurstConfig(burstCount, burstDuration);
+
+        settingsView.showSuccess("Settings saved successfully!");
+        controlPanel.updateBurstLabel(burstCount, burstDuration);
+        logPanel.append(String.format("Settings saved: Max=%d, Window=%ds, Block=%ds, Burst=%d/%ds\n",
+            currentMaxRequests, currentTimeWindow, currentBlockDuration, burstCount, burstDuration));
+        refreshClientViews();
+
+        javafx.animation.Timeline closeTimer = new javafx.animation.Timeline(
+            new KeyFrame(Duration.seconds(1), e -> settingsStage.close())
+        );
+        closeTimer.play();
+    }
+
     private void refreshClientViews() {
         refreshClientViews(controlPanel.getSelectedClient());
     }
@@ -118,6 +192,7 @@ public class EnhancedDashboardView extends BorderPane {
             controlPanel.resetQuota();
             statsPanel.resetStats();
             controlPanel.updateRiskLevel(ViolationLevel.NORMAL);
+            controlPanel.clearBlockCountdown();
             activityTable.clear();
             trafficChart.updateData();
             return;
@@ -159,12 +234,36 @@ public class EnhancedDashboardView extends BorderPane {
                 }
             }
             controlPanel.updateRiskLevel(worstLevel);
+
+            long maxBlockRemaining = 0;
+            for (var activity : allActivities.values()) {
+                if (enforcer.getRemainingQuota(activity.getClientId()) == 0) {
+                    long blockTime = enforcer.getTimeUntilReset(activity.getClientId()).getSeconds();
+                    if (blockTime > maxBlockRemaining) {
+                        maxBlockRemaining = blockTime;
+                    }
+                }
+            }
+            if (maxBlockRemaining > 0) {
+                controlPanel.updateBlockCountdown(maxBlockRemaining);
+            } else {
+                controlPanel.clearBlockCountdown();
+            }
+
             trafficChart.updateData();
             return;
         }
 
-        controlPanel.updateQuota(enforcer.getRemainingQuota(clientId), enforcer.getMaxRequests());
+        int remaining = enforcer.getRemainingQuota(clientId);
+        controlPanel.updateQuota(remaining, enforcer.getMaxRequests());
         statsPanel.updateStats(activityTracker.getActivity(clientId));
+
+        if (remaining == 0) {
+            long blockRemaining = enforcer.getTimeUntilReset(clientId).getSeconds();
+            controlPanel.updateBlockCountdown(blockRemaining);
+        } else {
+            controlPanel.clearBlockCountdown();
+        }
 
         RequestLog log = logger.getLog(clientId);
         ViolationLevel level = (log != null && !log.getRequests().isEmpty()) ? analyzer.analyze(log).getLevel() : ViolationLevel.NORMAL;
