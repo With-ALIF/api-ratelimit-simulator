@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 public class DashboardActionHandler {
 
@@ -21,6 +22,8 @@ public class DashboardActionHandler {
     private final ClientActivityTracker activityTracker;
     private RateLimitAnalyzer analyzer;
     private final EnhancedReportGenerator reportGenerator;
+    private final RequestLogService requestLogService;
+    private final ClientRegistryService clientRegistry;
     private final DatasetLoader datasetLoader = new DatasetLoader();
     private final BurstTrafficGenerator burstGenerator = new BurstTrafficGenerator();
     private final Random random = new Random();
@@ -29,12 +32,33 @@ public class DashboardActionHandler {
 
     public DashboardActionHandler(RequestLogger logger, RateLimitEnforcer enforcer,
                                   ClientActivityTracker activityTracker, RateLimitAnalyzer analyzer,
-                                  EnhancedReportGenerator reportGenerator) {
+                                  EnhancedReportGenerator reportGenerator, RequestLogService requestLogService,
+                                  ClientRegistryService clientRegistry) {
         this.logger = logger;
         this.enforcer = enforcer;
         this.activityTracker = activityTracker;
         this.analyzer = analyzer;
         this.reportGenerator = reportGenerator;
+        this.requestLogService = requestLogService;
+        this.clientRegistry = clientRegistry;
+    }
+
+    private void persistToCsv(ServiceRequest req, RateLimitEnforcer.RequestResult result) {
+        String clientId = req.getClientId();
+        RequestLog log = logger.getLog(clientId);
+        AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(clientId);
+        requestLogService.append(
+            UUID.randomUUID().toString(),
+            clientId,
+            req.getRequestType(),
+            result.isBlocked(),
+            enforcer.getMaxRequests(),
+            result.getRemainingQuota(),
+            enforcer.getTimeWindow().getSeconds(),
+            abuse.hasViolations(),
+            abuse.hasViolations() ? String.join("; ", abuse.getViolations()) : "",
+            abuse.getLevel().name()
+        );
     }
 
     public void handleSendRequest(String clientId, RequestType type, LogPanel logPanel, Runnable onUpdated) {
@@ -49,10 +73,11 @@ public class DashboardActionHandler {
         }
 
         if ("ALL_CLIENTS".equals(clientId)) {
-            for (String cid : new String[]{"CLIENT_A", "CLIENT_B", "CLIENT_C", "CLIENT_D"}) {
+            for (String cid : new String[]{"MobileApp", "WebApp", "PartnerAPI", "SuspiciousBot"}) {
                 ServiceRequest req = new ServiceRequest(cid, type, LocalDateTime.now());
                 RateLimitEnforcer.RequestResult result = enforcer.processRequest(req);
                 activityTracker.trackRequest(req, result.isBlocked());
+                persistToCsv(req, result);
                 String icon = result.isBlocked() ? "⛔" : "✅";
                 logPanel.append(String.format("%s [%s] %s - %s\n",
                     icon, req.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
@@ -65,6 +90,7 @@ public class DashboardActionHandler {
         ServiceRequest req = new ServiceRequest(clientId, type, LocalDateTime.now());
         RateLimitEnforcer.RequestResult result = enforcer.processRequest(req);
         activityTracker.trackRequest(req, result.isBlocked());
+        persistToCsv(req, result);
         onUpdated.run();
 
         String icon = result.isBlocked() ? "⛔" : "✅";
@@ -81,12 +107,13 @@ public class DashboardActionHandler {
         if ("ALL_CLIENTS".equals(clientId)) {
             int totalAllowed = 0, totalBlocked = 0;
             logPanel.append(String.format("\n⚡ Burst simulation for ALL clients (%d req each, %ds)...\n", burstCount, burstDuration));
-            for (String cid : new String[]{"CLIENT_A", "CLIENT_B", "CLIENT_C", "CLIENT_D"}) {
+            for (String cid : new String[]{"MobileApp", "WebApp", "PartnerAPI", "SuspiciousBot"}) {
                 List<ServiceRequest> burst = burstGenerator.generateBurst(cid, burstCount, Duration.ofSeconds(burstDuration));
                 int allowed = 0, blocked = 0;
                 for (ServiceRequest req : burst) {
                     RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
                     activityTracker.trackRequest(req, res.isBlocked());
+                    persistToCsv(req, res);
                     if (res.isBlocked()) blocked++; else allowed++;
                 }
                 totalAllowed += allowed;
@@ -105,6 +132,7 @@ public class DashboardActionHandler {
         for (ServiceRequest req : burst) {
             RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
             activityTracker.trackRequest(req, res.isBlocked());
+            persistToCsv(req, res);
             if (res.isBlocked()) blocked++; else allowed++;
             logPanel.append(String.format("%s [%s] %s %s - %s\n",
                 res.isBlocked() ? "⛔" : "✅", req.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
@@ -132,6 +160,7 @@ public class DashboardActionHandler {
                 controlPanel.addClientIfAbsent(req.getClientId());
                 RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
                 activityTracker.trackRequest(req, res.isBlocked());
+                persistToCsv(req, res);
                 if (res.isBlocked()) blocked++; else allowed++;
                 logPanel.append(String.format("%s [%s] %s %s - %s\n",
                     res.isBlocked() ? "⛔" : "✅", req.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
@@ -252,6 +281,7 @@ public class DashboardActionHandler {
 
         dialog.showAndWait().ifPresent(client -> {
             activityTracker.registerClient(client);
+            clientRegistry.register(client.getClientId(), client.getName());
             controlPanel.addClientIfAbsent(client.getClientId());
             controlPanel.setSelectedClient(client.getClientId());
             logPanel.append(String.format("Registered new API client: %s (%s)\n", client.getClientId(), client.getName()));

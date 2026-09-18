@@ -93,7 +93,10 @@ public class ReportViewDialog {
             scene.getStylesheets().add(ReportViewDialog.class.getResource("/styles/main.css").toExternalForm());
         } catch (Exception ignored) {}
 
+        stage.setMinWidth(700);
+        stage.setMinHeight(450);
         stage.setScene(scene);
+        stage.centerOnScreen();
         stage.showAndWait();
     }
 
@@ -243,6 +246,8 @@ public class ReportViewDialog {
             scene.getStylesheets().add(ReportViewDialog.class.getResource("/styles/main.css").toExternalForm());
         } catch (Exception ignored) {}
 
+        stage.setMinWidth(700);
+        stage.setMinHeight(400);
         stage.setScene(scene);
         stage.centerOnScreen();
         stage.showAndWait();

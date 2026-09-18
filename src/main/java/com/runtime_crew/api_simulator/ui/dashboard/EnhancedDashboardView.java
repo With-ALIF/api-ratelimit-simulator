@@ -7,6 +7,8 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -25,6 +27,8 @@ public class EnhancedDashboardView extends BorderPane {
     private final ClientActivityTracker activityTracker = new ClientActivityTracker();
     private RateLimitAnalyzer analyzer;
     private final EnhancedReportGenerator reportGenerator = new EnhancedReportGenerator();
+    private final RequestLogService requestLogService = new RequestLogService();
+    private final ClientRegistryService clientRegistry = new ClientRegistryService();
     private final DashboardActionHandler actionHandler;
 
     private final StatsPanel statsPanel = new StatsPanel();
@@ -48,7 +52,7 @@ public class EnhancedDashboardView extends BorderPane {
             new AbnormalPatternPolicy(3),
             new RetryAbusePolicy(8, java.time.Duration.ofSeconds(2))
         ));
-        actionHandler = new DashboardActionHandler(logger, enforcer, activityTracker, analyzer, reportGenerator);
+        actionHandler = new DashboardActionHandler(logger, enforcer, activityTracker, analyzer, reportGenerator, requestLogService, clientRegistry);
         trafficChart = new TrafficChartView(activityTracker, controlPanel::getSelectedClient);
 
         statusTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> refreshClientViews()));
@@ -57,6 +61,7 @@ public class EnhancedDashboardView extends BorderPane {
 
         initLayout();
         setupEvents();
+        loadFromCsv();
 
         logPanel.append("API Rate-Limit & Abuse Simulator Started\n");
         logPanel.append("Advanced detection policies loaded\n");
@@ -70,8 +75,8 @@ public class EnhancedDashboardView extends BorderPane {
         controlScroll.setFitToWidth(true);
         controlScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         controlScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        controlScroll.setMinWidth(270);
-        controlScroll.setPrefWidth(280);
+        controlScroll.setMinWidth(310);
+        controlScroll.setPrefWidth(310);
 
         VBox centerArea = new VBox(8, activityTable, trafficChart);
         HBox.setHgrow(centerArea, Priority.ALWAYS);
@@ -96,6 +101,8 @@ public class EnhancedDashboardView extends BorderPane {
         controlPanel.setOnCompare(actionHandler::handleCompareAll);
         controlPanel.setOnExport(c -> actionHandler.handleExport(c, getScene().getWindow(), logPanel));
         controlPanel.setOnClearHistory(this::handleClearHistory);
+        controlPanel.setOnDeleteClient(this::handleDeleteClient);
+        controlPanel.setOnRenameClient(this::handleRenameClient);
         controlPanel.setOnBarChart(this::handleBarChart);
         controlPanel.setOnSettings(this::handleSettings);
     }
@@ -106,10 +113,12 @@ public class EnhancedDashboardView extends BorderPane {
         if ("ALL_CLIENTS".equals(clientId)) {
             logger.clearAll();
             activityTracker.clearAll();
+            requestLogService.clearAll();
             logPanel.append("History cleared for ALL clients\n");
         } else {
             logger.clearClient(clientId);
             activityTracker.clearClient(clientId);
+            requestLogService.removeClient(clientId);
             logPanel.append("History cleared for " + clientId + "\n");
         }
 
@@ -119,18 +128,112 @@ public class EnhancedDashboardView extends BorderPane {
         controlPanel.updateRiskLevel(ViolationLevel.NORMAL);
     }
 
+    private void handleDeleteClient(String clientId) {
+        if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
+        if ("ALL_CLIENTS".equals(clientId)) { ReportDialogHelper.showAlert("Cannot delete ALL_CLIENTS!"); return; }
+
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Delete Client");
+        alert.setHeaderText("Are you sure?");
+        String msg = clientRegistry.isDefaultClient(clientId)
+                ? clientId + " is a default client. The program resets to its initial state whenever it is restarted.\nDelete anyway?"
+                : "Delete \"" + clientId + "\" and all its logs permanently?";
+        alert.setContentText(msg);
+        alert.showAndWait().ifPresent(btn -> {
+            if (btn != ButtonType.OK) return;
+            logger.clearClient(clientId);
+            activityTracker.clearClient(clientId);
+            requestLogService.removeClient(clientId);
+            clientRegistry.removeClient(clientId);
+            controlPanel.removeClientFromBox(clientId);
+            activityTable.clear();
+            statsPanel.resetStats();
+            controlPanel.resetQuota();
+            controlPanel.updateRiskLevel(ViolationLevel.NORMAL);
+            logPanel.append("Deleted client: " + clientId + "\n");
+        });
+    }
+
+    private void handleRenameClient(String oldId) {
+        if (oldId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
+        if ("ALL_CLIENTS".equals(oldId)) { ReportDialogHelper.showAlert("Cannot rename ALL_CLIENTS!"); return; }
+
+        javafx.scene.control.TextInputDialog dialog = new javafx.scene.control.TextInputDialog(oldId);
+        dialog.setTitle("Rename Client");
+        dialog.setHeaderText("Rename: " + oldId);
+        dialog.setContentText("New name:");
+        dialog.showAndWait().ifPresent(newId -> {
+            newId = newId.trim();
+            if (newId.isEmpty() || newId.equals(oldId)) return;
+
+            requestLogService.moveClientLogs(oldId, newId);
+            logger.clearClient(oldId);
+            activityTracker.clearClient(oldId);
+
+            List<CsvRequestLogEntry> entries = requestLogService.loadAll();
+            for (CsvRequestLogEntry entry : entries) {
+                if (entry.clientId.equals(newId)) {
+                    ServiceRequest req = new ServiceRequest(newId, entry.getRequestType(), entry.timestamp);
+                    logger.logRequest(req);
+                    activityTracker.trackRequest(req, entry.isBlocked());
+                }
+            }
+
+            if (clientRegistry.isDefaultClient(oldId)) {
+                controlPanel.removeClientFromBox(newId);
+                logPanel.append("Renamed (temporary): " + oldId + " -> " + newId + " (resets on restart)\n");
+            } else {
+                clientRegistry.renameClient(oldId, newId);
+                logPanel.append("Renamed: " + oldId + " -> " + newId + "\n");
+            }
+
+            controlPanel.renameClientInBox(oldId, newId);
+            refreshClientViews();
+        });
+    }
+
+    private void loadFromCsv() {
+        List<String> savedClients = clientRegistry.loadAll();
+        for (String cid : savedClients) {
+            controlPanel.addClientIfAbsent(cid);
+        }
+        if (!savedClients.isEmpty()) {
+            logPanel.append(String.format("Loaded %d saved clients from data/clients.csv\n", savedClients.size()));
+        }
+
+        List<CsvRequestLogEntry> entries = requestLogService.loadAll();
+        if (entries.isEmpty()) {
+            logPanel.append("No previous data found in data/requests.csv\n");
+            return;
+        }
+        int loaded = 0;
+        for (CsvRequestLogEntry entry : entries) {
+            ServiceRequest req = new ServiceRequest(entry.clientId, entry.getRequestType(), entry.timestamp);
+            logger.logRequest(req);
+            activityTracker.trackRequest(req, entry.isBlocked());
+            controlPanel.addClientIfAbsent(entry.clientId);
+            loaded++;
+        }
+        logPanel.append(String.format("Loaded %d records from data/requests.csv\n", loaded));
+        controlPanel.setSelectedClient("ALL_CLIENTS");
+        refreshClientViews();
+    }
+
     private void handleBarChart() {
         BarChartView barChartView = new BarChartView(activityTracker, controlPanel::getSelectedClient);
 
         Stage chartStage = new Stage();
         chartStage.initModality(Modality.NONE);
         chartStage.setTitle("Bar Chart - Request Distribution");
+        chartStage.setMinWidth(600);
+        chartStage.setMinHeight(350);
 
         Scene scene = new Scene(barChartView, 650, 380);
         scene.getStylesheets().add(
             getClass().getResource("/styles/main.css").toExternalForm()
         );
         chartStage.setScene(scene);
+        chartStage.centerOnScreen();
         chartStage.show();
     }
 

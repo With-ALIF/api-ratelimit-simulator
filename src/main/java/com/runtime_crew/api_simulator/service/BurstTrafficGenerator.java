@@ -14,7 +14,7 @@ public class BurstTrafficGenerator {
 
     public List<ServiceRequest> generateBurst(String clientId, int requestCount, Duration totalDuration) {
         if (clientId == null || clientId.trim().isEmpty()) {
-            clientId = "CLIENT_A";
+            clientId = "MobileApp";
         }
         if (requestCount <= 0) {
             requestCount = 20;

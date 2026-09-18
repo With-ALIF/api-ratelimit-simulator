@@ -2,9 +2,13 @@ package com.runtime_crew.api_simulator.ui.dashboard;
 
 import com.runtime_crew.api_simulator.model.RequestType;
 import com.runtime_crew.api_simulator.model.ViolationLevel;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -23,6 +27,8 @@ public class ControlPanelView extends VBox {
     private final Button burstBtn = createButton("Simulate Burst", "btn-warning");
     private final Button loadDatasetBtn = createButton("Load Dataset (.txt/.csv)", "btn-accent");
     private final Button registerBtn = createButton("+ Register Client", "");
+    private final Button renameBtn = createButton("Rename Client", "");
+    private final Button deleteBtn = createButton("Delete Client", "btn-danger");
     private final Button fullReportBtn = createButton("Full Report", "btn-success");
     private final Button quickReportBtn = createButton("Quick Summary", "");
     private final Button barChartBtn = createButton("Bar Chart", "btn-accent");
@@ -40,7 +46,8 @@ public class ControlPanelView extends VBox {
     private void initLayout() {
         Label clientTitle = new Label("Select Client");
         clientTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
-        clientBox.getItems().addAll("ALL_CLIENTS", "CLIENT_A", "CLIENT_B", "CLIENT_C", "CLIENT_D");
+        clientBox.getItems().addAll("ALL_CLIENTS", "MobileApp", "WebApp", "PartnerAPI", "SuspiciousBot");
+        clientBox.setValue("ALL_CLIENTS");
         clientBox.setPromptText("Select Client");
         clientBox.setMaxWidth(Double.MAX_VALUE);
         VBox clientSection = new VBox(4, clientTitle, clientBox);
@@ -83,13 +90,34 @@ public class ControlPanelView extends VBox {
         Label reportsHeader = new Label("Reports & Diagnostics");
         reportsHeader.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
 
+        GridPane reportsGrid = new GridPane();
+        reportsGrid.setHgap(6);
+        reportsGrid.setVgap(6);
+        reportsGrid.setPadding(new Insets(2, 0, 2, 0));
+        ColumnConstraints col = new ColumnConstraints();
+        col.setPercentWidth(50);
+        reportsGrid.getColumnConstraints().addAll(col, col);
+        reportsGrid.add(fullReportBtn, 0, 0);
+        reportsGrid.add(quickReportBtn, 1, 0);
+        reportsGrid.add(barChartBtn, 0, 1);
+        reportsGrid.add(compareBtn, 1, 1);
+        reportsGrid.add(exportBtn, 0, 2);
+        reportsGrid.add(clearBtn, 1, 2);
+        HBox.setHgrow(reportsGrid, Priority.ALWAYS);
+        fullReportBtn.setMaxWidth(Double.MAX_VALUE);
+        quickReportBtn.setMaxWidth(Double.MAX_VALUE);
+        barChartBtn.setMaxWidth(Double.MAX_VALUE);
+        compareBtn.setMaxWidth(Double.MAX_VALUE);
+        exportBtn.setMaxWidth(Double.MAX_VALUE);
+        clearBtn.setMaxWidth(Double.MAX_VALUE);
+
         this.getStyleClass().add("card");
-        this.setPrefWidth(260);
+        this.setPrefWidth(300);
         this.getChildren().addAll(
             headerBox, new Separator(),
             clientSection, typeSection, filterSection, statusSection, new Separator(),
-            actionsHeader, sendBtn, burstBtn, loadDatasetBtn, registerBtn, new Separator(),
-            reportsHeader, fullReportBtn, quickReportBtn, barChartBtn, compareBtn, exportBtn, clearBtn, new Separator(),
+            actionsHeader, sendBtn, burstBtn, loadDatasetBtn, registerBtn, renameBtn, deleteBtn, new Separator(),
+            reportsHeader, reportsGrid, new Separator(),
             settingsBtn, statsPanel
         );
     }
@@ -114,6 +142,8 @@ public class ControlPanelView extends VBox {
     public void setOnSimulateBurst(Consumer<String> consumer) { burstBtn.setOnAction(e -> consumer.accept(clientBox.getValue())); }
     public void setOnLoadDataset(Runnable action) { loadDatasetBtn.setOnAction(e -> action.run()); }
     public void setOnRegisterClient(Runnable action) { registerBtn.setOnAction(e -> action.run()); }
+    public void setOnRenameClient(Consumer<String> c) { renameBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
+    public void setOnDeleteClient(Consumer<String> c) { deleteBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
     public void setOnFullReport(Consumer<String> c) { fullReportBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
     public void setOnQuickReport(Consumer<String> c) { quickReportBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
     public void setOnCompare(Runnable action) { compareBtn.setOnAction(e -> action.run()); }
@@ -128,6 +158,15 @@ public class ControlPanelView extends VBox {
 
     public void addClientIfAbsent(String clientId) {
         if (!clientBox.getItems().contains(clientId)) clientBox.getItems().add(clientId);
+    }
+    public void removeClientFromBox(String clientId) {
+        clientBox.getItems().remove(clientId);
+        if (clientId.equals(clientBox.getValue())) clientBox.setValue(null);
+    }
+    public void renameClientInBox(String oldId, String newId) {
+        clientBox.getItems().remove(oldId);
+        if (!clientBox.getItems().contains(newId)) clientBox.getItems().add(newId);
+        if (oldId.equals(clientBox.getValue())) clientBox.setValue(newId);
     }
     public void setSelectedClient(String clientId) { clientBox.setValue(clientId); }
     public String getSelectedClient() { return clientBox.getValue(); }

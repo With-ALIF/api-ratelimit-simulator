@@ -10,7 +10,7 @@ public class MainApp extends Application {
     @Override
     public void start(Stage stage) {
         EnhancedDashboardView root = new EnhancedDashboardView();
-        Scene scene = new Scene(root, 900, 600);
+        Scene scene = new Scene(root, 1000, 620);
         scene.getStylesheets().add(
             getClass().getResource("/styles/main.css").toExternalForm()
         );
