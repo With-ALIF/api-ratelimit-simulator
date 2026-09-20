@@ -7,21 +7,25 @@ import java.util.List;
 
 public class CsvParser {
 
-    public static String buildCsvLine(String requestId, String clientId,
+    public static String buildCsvLine(String requestId, String clientId, String serviceId,
             RequestType type, String timestamp, boolean blocked,
             int responseTimeMs, int rateLimit, int remaining,
             long windowSeconds, boolean abuseDetected,
-            String abuseReason, String severity) {
+            String abuseReason, String severity,
+            String eventType, int riskScore, String reason) {
         String status = blocked ? "BLOCKED" : "ALLOWED";
         return String.join(",",
-                escape(requestId), escape(clientId),
+                escape(requestId), escape(clientId), escape(serviceId != null ? serviceId : ""),
                 escape(mapEndpoint(type)), escape(mapMethod(type)),
                 escape(timestamp), escape(status),
                 blocked ? "429" : "200", String.valueOf(responseTimeMs),
                 String.valueOf(rateLimit), String.valueOf(remaining),
                 String.valueOf(windowSeconds), String.valueOf(abuseDetected),
                 escape(abuseReason != null ? abuseReason : ""),
-                escape(severity != null ? severity : "NORMAL"));
+                escape(severity != null ? severity : "NORMAL"),
+                escape(eventType != null ? eventType : "UNKNOWN"),
+                String.valueOf(riskScore),
+                escape(reason != null ? reason : ""));
     }
 
     public static String[] parseLine(String line) {

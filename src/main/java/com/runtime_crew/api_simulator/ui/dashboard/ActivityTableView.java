@@ -17,13 +17,60 @@ public class ActivityTableView extends VBox {
 
     private final TableView<ActivityRecord> activityTable = new TableView<>();
     private final ObservableList<ActivityRecord> activityData = FXCollections.observableArrayList();
+    private final TableColumn<ActivityRecord, String> serviceCol;
     private List<ActivityRecord> allRecords = new ArrayList<>();
     private String statusFilter = "ALL";
     private String typeFilter = "ALL";
+    private boolean multiServiceMode = false;
 
     public ActivityTableView() {
         super(10);
+        serviceCol = createServiceColumn();
         initLayout();
+    }
+
+    private TableColumn<ActivityRecord, String> createServiceColumn() {
+        TableColumn<ActivityRecord, String> col = new TableColumn<>("Service");
+        col.setCellValueFactory(data -> {
+            String svc = data.getValue().getService();
+            if (svc != null && !svc.trim().isEmpty()) {
+                return new SimpleStringProperty(svc);
+            }
+            String clientId = data.getValue().getClientId();
+            if (clientId != null && clientId.startsWith("svc_")) {
+                return new SimpleStringProperty(clientId.substring(4));
+            }
+            return new SimpleStringProperty("-");
+        });
+        col.setPrefWidth(150);
+        col.setCellFactory(column -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if ("-".equals(item)) {
+                        setStyle("-fx-text-fill: #64748b;");
+                    } else {
+                        setStyle("-fx-text-fill: #a78bfa; -fx-font-weight: bold;");
+                    }
+                }
+            }
+        });
+        col.setVisible(false);
+        return col;
+    }
+
+    public void setServiceColumnVisible(boolean visible) {
+        serviceCol.setVisible(visible);
+    }
+
+    public void setMultiServiceMode(boolean multiServiceMode) {
+        this.multiServiceMode = multiServiceMode;
+        applyFilters();
     }
 
     private void initLayout() {
@@ -32,13 +79,19 @@ public class ActivityTableView extends VBox {
 
         activityTable.setItems(activityData);
 
-        TableColumn<ActivityRecord, String> clientCol = new TableColumn<>("Client");
-        clientCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getClientId()));
-        clientCol.setPrefWidth(100);
-
         TableColumn<ActivityRecord, String> timeCol = new TableColumn<>("Time");
         timeCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getFormattedTime()));
-        timeCol.setPrefWidth(100);
+        timeCol.setPrefWidth(90);
+
+        TableColumn<ActivityRecord, String> clientCol = new TableColumn<>("Client");
+        clientCol.setCellValueFactory(data -> {
+            String clientId = data.getValue().getClientId();
+            if (clientId != null && clientId.startsWith("svc_")) {
+                return new SimpleStringProperty("-");
+            }
+            return new SimpleStringProperty(clientId != null ? clientId : "-");
+        });
+        clientCol.setPrefWidth(110);
 
         TableColumn<ActivityRecord, RequestType> typeCol = new TableColumn<>("Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("requestType"));
@@ -46,7 +99,7 @@ public class ActivityTableView extends VBox {
 
         TableColumn<ActivityRecord, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getStatus()));
-        statusCol.setPrefWidth(120);
+        statusCol.setPrefWidth(100);
 
         statusCol.setCellFactory(column -> new TableCell<>() {
             @Override
@@ -66,7 +119,7 @@ public class ActivityTableView extends VBox {
             }
         });
 
-        activityTable.getColumns().addAll(List.of(timeCol, clientCol, typeCol, statusCol));
+        activityTable.getColumns().addAll(List.of(timeCol, clientCol, serviceCol, typeCol, statusCol));
         activityTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         activityTable.setPlaceholder(new Label("No activity recorded yet"));
 
@@ -111,6 +164,11 @@ public class ActivityTableView extends VBox {
         for (ActivityRecord r : allRecords) {
             boolean statusMatch = "ALL".equals(statusFilter) || r.getStatus().equals(statusFilter);
             boolean typeMatch = "ALL".equals(typeFilter) || r.getRequestType().toString().equals(typeFilter);
+            if (multiServiceMode) {
+                String svc = r.getService();
+                boolean isSingleService = (svc == null || svc.trim().isEmpty() || "-".equals(svc));
+                if (isSingleService) continue;
+            }
             if (statusMatch && typeMatch) {
                 activityData.add(r);
             }

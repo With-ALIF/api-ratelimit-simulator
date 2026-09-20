@@ -183,7 +183,7 @@ public class EnhancedReportGenerator {
     }
 
     public String generateAllClientsUsageReport(int totalReqs, int totalAllowed, int totalBlocked, double totalRate,
-                                                 Map<String, ClientActivity> allActivities) {
+                                                 Map<String, ClientActivity> allActivities, boolean multiServiceMode) {
         StringBuilder sb = new StringBuilder();
         String dateStr = LocalDateTime.now().format(DATE_TIME_FORMAT);
 
@@ -221,6 +221,35 @@ sb.append("\n");
         sb.append("  ").append(String.format("%-14s %6d %8d %8d %8.1f%%",
             "TOTAL", totalReqs, totalAllowed, totalBlocked, totalRate)).append("\n");
         sb.append("\n");
+
+        if (multiServiceMode) {
+            sb.append("  SERVICE BREAKDOWN\n");
+            sb.append("  ").append(String.format("%-20s %8s %10s %10s", "SERVICE", "TOTAL", "ALLOWED", "BLOCKED")).append("\n");
+            sb.append("  ").append("-".repeat(55)).append("\n");
+
+            Map<String, int[]> globalServiceStats = new LinkedHashMap<>();
+            for (Map.Entry<String, ClientActivity> entry : allActivities.entrySet()) {
+                ClientActivity a = entry.getValue();
+                for (ClientActivityTracker.ActivityRecord r : a.getRecords()) {
+                    String svc = r.getService();
+                    if (svc == null || svc.trim().isEmpty() || "-".equals(svc)) {
+                        svc = "Single-Service";
+                    }
+                    globalServiceStats.computeIfAbsent(svc, k -> new int[]{0, 0, 0});
+                    int[] stats = globalServiceStats.get(svc);
+                    stats[0]++;
+                    if (r.isBlocked()) stats[2]++;
+                    else stats[1]++;
+                }
+            }
+            for (Map.Entry<String, int[]> svcEntry : globalServiceStats.entrySet()) {
+                int[] stats = svcEntry.getValue();
+                sb.append("  ").append(String.format("%-20s %8d %10d %10d",
+                    svcEntry.getKey(), stats[0], stats[1], stats[2])).append("\n");
+            }
+            sb.append("  ").append("-".repeat(55)).append("\n");
+            sb.append("\n");
+        }
 
         sb.append(line()).append("\n");
         sb.append("\n");
@@ -308,7 +337,7 @@ sb.append("\n");
         return distribution;
     }
 
-    public String generateAllClientsFullReport(Map<String, ClientActivity> allActivities) {
+    public String generateAllClientsFullReport(Map<String, ClientActivity> allActivities, boolean multiServiceMode) {
         StringBuilder sb = new StringBuilder();
         String dateStr = LocalDateTime.now().format(DATE_TIME_FORMAT);
         int W2 = 70;
@@ -366,6 +395,41 @@ sb.append("\n");
             "TOTAL", String.valueOf(grandTotal), allowedStr, blockedStr,
             String.format("%.1f%%", grandRate), "-"));
         sb.append(sepSingle).append("\n\n");
+
+        if (multiServiceMode) {
+            sb.append("SERVICE BREAKDOWN\n");
+            sb.append(sepDouble).append("\n");
+            String svcHeader = "  %-16s  %-16s  %10s  %10s  %10s\n";
+            String svcRow    = "  %-16s  %-16s  %10d  %10d  %10d\n";
+            sb.append(String.format(svcHeader, "Client", "Service", "Requests", "Allowed", "Blocked"));
+            sb.append(sepDouble).append("\n");
+
+            for (Map.Entry<String, ClientActivity> entry : allActivities.entrySet()) {
+                String cid = entry.getKey();
+                ClientActivity a = entry.getValue();
+                Map<String, int[]> serviceStats = new LinkedHashMap<>();
+                for (ClientActivityTracker.ActivityRecord r : a.getRecords()) {
+                    String svc = r.getService();
+                    if (svc == null || svc.trim().isEmpty() || "-".equals(svc)) {
+                        svc = "Single-Service";
+                    }
+                    serviceStats.computeIfAbsent(svc, k -> new int[]{0, 0, 0});
+                    int[] stats = serviceStats.get(svc);
+                    stats[0]++;
+                    if (r.isBlocked()) stats[2]++;
+                    else stats[1]++;
+                }
+                for (Map.Entry<String, int[]> svcEntry : serviceStats.entrySet()) {
+                    int[] stats = svcEntry.getValue();
+                    sb.append(String.format(svcRow,
+                        cid, svcEntry.getKey(),
+                        stats[0],
+                        stats[1],
+                        stats[2]));
+                }
+            }
+            sb.append(sepDouble).append("\n\n");
+        }
 
         sb.append("RATE-LIMIT STATUS\n");
         sb.append(sepSingle).append("\n");

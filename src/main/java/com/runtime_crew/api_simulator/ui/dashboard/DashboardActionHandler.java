@@ -43,10 +43,8 @@ public class DashboardActionHandler {
         this.clientRegistry = clientRegistry;
     }
 
-    private void persistToCsv(ServiceRequest req, RateLimitEnforcer.RequestResult result) {
+    private void persistToCsv(ServiceRequest req, RateLimitEnforcer.RequestResult result, EventType eventType, int riskScore, String reason) {
         String clientId = req.getClientId();
-        RequestLog log = logger.getLog(clientId);
-        AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(clientId);
         requestLogService.append(
             UUID.randomUUID().toString(),
             clientId,
@@ -55,9 +53,9 @@ public class DashboardActionHandler {
             enforcer.getMaxRequests(),
             result.getRemainingQuota(),
             enforcer.getTimeWindow().getSeconds(),
-            abuse.hasViolations(),
-            abuse.hasViolations() ? String.join("; ", abuse.getViolations()) : "",
-            abuse.getLevel().name()
+            eventType != null ? eventType.name() : "UNKNOWN",
+            riskScore,
+            reason != null ? reason : ""
         );
     }
 
@@ -77,11 +75,15 @@ public class DashboardActionHandler {
                 ServiceRequest req = new ServiceRequest(cid, type, LocalDateTime.now());
                 RateLimitEnforcer.RequestResult result = enforcer.processRequest(req);
                 activityTracker.trackRequest(req, result.isBlocked());
-                persistToCsv(req, result);
-                String icon = result.isBlocked() ? "⛔" : "✅";
-                logPanel.append(String.format("%s [%s] %s - %s\n",
-                    icon, req.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                    cid, result.isBlocked() ? "BLOCKED" : "ALLOWED"));
+
+                RequestLog log = logger.getLog(cid);
+                AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(cid);
+                EventType eventType = determineEventType(result, abuse);
+                int riskScore = abuse.getRiskScore();
+                String reason = abuse.hasViolations() ? abuse.getSummary() : (result.isBlocked() ? "RATE_LIMIT_EXCEEDED" : "OK");
+
+                persistToCsv(req, result, eventType, riskScore, reason);
+                logPanel.appendEvent(eventType, cid, reason);
             }
             onUpdated.run();
             return;
@@ -90,15 +92,16 @@ public class DashboardActionHandler {
         ServiceRequest req = new ServiceRequest(clientId, type, LocalDateTime.now());
         RateLimitEnforcer.RequestResult result = enforcer.processRequest(req);
         activityTracker.trackRequest(req, result.isBlocked());
-        persistToCsv(req, result);
-        onUpdated.run();
 
-        String icon = result.isBlocked() ? "⛔" : "✅";
-        logPanel.append(String.format("%s [%s] %s - %s | Quota: %d/%d%s\n",
-            icon, req.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-            req.getClientId(), result.isBlocked() ? "BLOCKED" : "ALLOWED",
-            result.getRemainingQuota(), enforcer.getMaxRequests(),
-            result.isBlocked() ? " ⚠️ RATE LIMIT EXCEEDED" : ""));
+        RequestLog log = logger.getLog(clientId);
+        AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(clientId);
+        EventType eventType = determineEventType(result, abuse);
+        int riskScore = abuse.getRiskScore();
+        String reason = abuse.hasViolations() ? abuse.getSummary() : (result.isBlocked() ? "RATE_LIMIT_EXCEEDED" : "OK");
+
+        persistToCsv(req, result, eventType, riskScore, reason);
+        onUpdated.run();
+        logPanel.appendEvent(eventType, clientId, reason + " | Quota: " + result.getRemainingQuota() + "/" + enforcer.getMaxRequests());
     }
 
     public void handleSimulateBurst(String clientId, LogPanel logPanel, Runnable onUpdated) {
@@ -113,7 +116,14 @@ public class DashboardActionHandler {
                 for (ServiceRequest req : burst) {
                     RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
                     activityTracker.trackRequest(req, res.isBlocked());
-                    persistToCsv(req, res);
+
+                    RequestLog log = logger.getLog(cid);
+                    AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(cid);
+                    EventType eventType = determineEventType(res, abuse);
+                    int riskScore = abuse.getRiskScore();
+                    String reason = abuse.hasViolations() ? abuse.getSummary() : (res.isBlocked() ? "RATE_LIMIT_EXCEEDED" : "OK");
+
+                    persistToCsv(req, res, eventType, riskScore, reason);
                     if (res.isBlocked()) blocked++; else allowed++;
                 }
                 totalAllowed += allowed;
@@ -132,11 +142,16 @@ public class DashboardActionHandler {
         for (ServiceRequest req : burst) {
             RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
             activityTracker.trackRequest(req, res.isBlocked());
-            persistToCsv(req, res);
+
+            RequestLog log = logger.getLog(clientId);
+            AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(clientId);
+            EventType eventType = determineEventType(res, abuse);
+            int riskScore = abuse.getRiskScore();
+            String reason = abuse.hasViolations() ? abuse.getSummary() : (res.isBlocked() ? "RATE_LIMIT_EXCEEDED" : "OK");
+
+            persistToCsv(req, res, eventType, riskScore, reason);
             if (res.isBlocked()) blocked++; else allowed++;
-            logPanel.append(String.format("%s [%s] %s %s - %s\n",
-                res.isBlocked() ? "⛔" : "✅", req.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                req.getClientId(), req.getRequestType(), res.isBlocked() ? "BLOCKED" : "ALLOWED"));
+            logPanel.appendEvent(eventType, clientId, reason + " " + req.getRequestType());
         }
         onUpdated.run();
         logPanel.append(String.format("⚡ Burst Done! Total: %d | Allowed: %d | Blocked: %d\n\n", burstCount, allowed, blocked));
@@ -160,11 +175,16 @@ public class DashboardActionHandler {
                 controlPanel.addClientIfAbsent(req.getClientId());
                 RateLimitEnforcer.RequestResult res = enforcer.processRequest(req);
                 activityTracker.trackRequest(req, res.isBlocked());
-                persistToCsv(req, res);
+
+                RequestLog log = logger.getLog(req.getClientId());
+                AbuseReport abuse = log != null ? analyzer.analyze(log) : new AbuseReport(req.getClientId());
+                EventType eventType = determineEventType(res, abuse);
+                int riskScore = abuse.getRiskScore();
+                String reason = abuse.hasViolations() ? abuse.getSummary() : (res.isBlocked() ? "RATE_LIMIT_EXCEEDED" : "OK");
+
+                persistToCsv(req, res, eventType, riskScore, reason);
                 if (res.isBlocked()) blocked++; else allowed++;
-                logPanel.append(String.format("%s [%s] %s %s - %s\n",
-                    res.isBlocked() ? "⛔" : "✅", req.getTimestamp().format(DateTimeFormatter.ofPattern("HH:mm:ss")),
-                    req.getClientId(), req.getRequestType(), res.isBlocked() ? "BLOCKED" : "ALLOWED"));
+                logPanel.appendEvent(eventType, req.getClientId(), reason + " " + req.getRequestType());
             }
             if (controlPanel.getSelectedClient() == null && !result.getRequests().isEmpty()) controlPanel.setSelectedClient(result.getRequests().get(0).getClientId());
             onUpdated.run();
@@ -172,13 +192,13 @@ public class DashboardActionHandler {
         } catch (Exception ex) { ReportDialogHelper.showAlert("Failed to load dataset: " + ex.getMessage()); }
     }
 
-    public void handleFullReport(String clientId) {
+    public void handleFullReport(String clientId, boolean multiServiceMode) {
         if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
 
         if ("ALL_CLIENTS".equals(clientId)) {
             var allActivities = activityTracker.getAllActivities();
             if (allActivities.isEmpty()) { ReportDialogHelper.showAlert("No data available!"); return; }
-            String report = reportGenerator.generateAllClientsFullReport(allActivities);
+            String report = reportGenerator.generateAllClientsFullReport(allActivities, multiServiceMode);
             ReportDialogHelper.showReport("Full Violation Report - ALL CLIENTS", report);
             return;
         }
@@ -188,7 +208,7 @@ public class DashboardActionHandler {
         ReportDialogHelper.showReport("Full Violation Report - " + clientId, reportGenerator.generateViolationReport(abuse, log, activityTracker.getActivity(clientId)));
     }
 
-    public void handleQuickReport(String clientId) {
+    public void handleQuickReport(String clientId, boolean multiServiceMode) {
         if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
 
         if ("ALL_CLIENTS".equals(clientId)) {
@@ -202,7 +222,7 @@ public class DashboardActionHandler {
             }
             double rate = totalReqs == 0 ? 100.0 : (totalAllowed * 100.0) / totalReqs;
             ReportDialogHelper.showReport("Quick Summary - ALL CLIENTS",
-                reportGenerator.generateAllClientsUsageReport(totalReqs, totalAllowed, totalBlocked, rate, allActivities));
+                reportGenerator.generateAllClientsUsageReport(totalReqs, totalAllowed, totalBlocked, rate, allActivities, multiServiceMode));
             return;
         }
 
@@ -216,13 +236,13 @@ public class DashboardActionHandler {
         ReportDialogHelper.showComparisonTable("Multi-Client Comparison Report", activityTracker.getAllActivities());
     }
 
-    public void handleExport(String clientId, Window window, LogPanel logPanel) {
+    public void handleExport(String clientId, Window window, LogPanel logPanel, boolean multiServiceMode) {
         if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
 
         if ("ALL_CLIENTS".equals(clientId)) {
             var allActivities = activityTracker.getAllActivities();
             if (allActivities.isEmpty()) { ReportDialogHelper.showAlert("No data available!"); return; }
-            String report = reportGenerator.generateAllClientsFullReport(allActivities);
+            String report = reportGenerator.generateAllClientsFullReport(allActivities, multiServiceMode);
             String fileName = "ALL_CLIENTS_report_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".txt";
             File file = ReportDialogHelper.chooseExportFile(window, fileName);
             if (file != null) {
@@ -299,5 +319,12 @@ public class DashboardActionHandler {
     public void updateBurstConfig(int burstCount, int burstDuration) {
         this.burstCount = burstCount;
         this.burstDuration = burstDuration;
+    }
+
+    private EventType determineEventType(RateLimitEnforcer.RequestResult result, AbuseReport abuse) {
+        if (result.isBlocked()) {
+            return abuse.hasViolations() ? EventType.ABUSE_DETECTED : EventType.RATE_LIMITED;
+        }
+        return abuse.hasViolations() ? EventType.ABUSE_DETECTED : EventType.ALLOWED;
     }
 }

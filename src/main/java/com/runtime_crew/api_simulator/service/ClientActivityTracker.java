@@ -45,6 +45,16 @@ public class ClientActivityTracker {
         activities.clear();
     }
 
+    public void restoreFromLogEntries(List<CsvRequestLogEntry> entries) {
+        for (CsvRequestLogEntry entry : entries) {
+            String clientId = entry.serviceId != null && !entry.serviceId.isEmpty()
+                    ? entry.serviceId : entry.clientId;
+            RequestType type = entry.getRequestType();
+            ServiceRequest req = new ServiceRequest(clientId, entry.endpoint, type, entry.timestamp);
+            trackRequest(req, entry.isBlocked());
+        }
+    }
+
     public static class ClientActivity {
         private final String clientId;
         private final String name;
@@ -76,6 +86,7 @@ public class ClientActivityTracker {
 
             ActivityRecord record = new ActivityRecord(
                 clientId,
+                request.getService(),
                 request.getTimestamp(),
                 request.getRequestType(),
                 blocked
@@ -116,12 +127,18 @@ public class ClientActivityTracker {
 
     public static class ActivityRecord {
         private final String clientId;
+        private final String service;
         private final LocalDateTime timestamp;
         private final RequestType requestType;
         private final boolean blocked;
 
         public ActivityRecord(String clientId, LocalDateTime timestamp, RequestType requestType, boolean blocked) {
+            this(clientId, null, timestamp, requestType, blocked);
+        }
+
+        public ActivityRecord(String clientId, String service, LocalDateTime timestamp, RequestType requestType, boolean blocked) {
             this.clientId = clientId;
+            this.service = service;
             this.timestamp = timestamp;
             this.requestType = requestType;
             this.blocked = blocked;
@@ -129,6 +146,10 @@ public class ClientActivityTracker {
 
         public String getClientId() {
             return clientId;
+        }
+
+        public String getService() {
+            return service;
         }
 
         public LocalDateTime getTimestamp() {

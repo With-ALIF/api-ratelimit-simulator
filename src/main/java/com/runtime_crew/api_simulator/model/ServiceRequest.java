@@ -9,10 +9,15 @@ public class ServiceRequest {
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final String clientId;
+    private final String service;
     private final RequestType requestType;
     private final LocalDateTime timestamp;
 
     public ServiceRequest(String clientId, RequestType requestType, LocalDateTime timestamp) {
+        this(clientId, null, requestType, timestamp);
+    }
+
+    public ServiceRequest(String clientId, String service, RequestType requestType, LocalDateTime timestamp) {
         if (clientId == null || clientId.trim().isEmpty()) {
             throw new IllegalArgumentException("Client ID cannot be null or empty");
         }
@@ -23,8 +28,13 @@ public class ServiceRequest {
             throw new IllegalArgumentException("Timestamp cannot be null");
         }
         this.clientId = clientId.trim();
+        this.service = (service != null && !service.trim().isEmpty()) ? service.trim() : null;
         this.requestType = requestType;
         this.timestamp = timestamp;
+    }
+
+    public String getService() {
+        return service;
     }
 
     public String getClientId() {

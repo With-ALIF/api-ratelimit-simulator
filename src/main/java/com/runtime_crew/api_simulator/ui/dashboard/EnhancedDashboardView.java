@@ -1,19 +1,19 @@
 package com.runtime_crew.api_simulator.ui.dashboard;
 
 import com.runtime_crew.api_simulator.model.*;
+import com.runtime_crew.api_simulator.multiservice.model.ApiService;
+import com.runtime_crew.api_simulator.multiservice.service.MultiServiceSimulator;
+import com.runtime_crew.api_simulator.multiservice.service.ServiceRegistry;
+import com.runtime_crew.api_simulator.multiservice.ui.ServiceManagementDialog;
+import com.runtime_crew.api_simulator.multiservice.ui.ServiceSelectorView;
 import com.runtime_crew.api_simulator.policy.*;
 import com.runtime_crew.api_simulator.service.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
@@ -28,6 +28,7 @@ public class EnhancedDashboardView extends BorderPane {
     private RateLimitAnalyzer analyzer;
     private final EnhancedReportGenerator reportGenerator = new EnhancedReportGenerator();
     private final RequestLogService requestLogService = new RequestLogService();
+    private final RequestLogService multiRequestLogService = new RequestLogService(java.nio.file.Path.of("data", "multi_requests.csv"));
     private final ClientRegistryService clientRegistry = new ClientRegistryService();
     private final DashboardActionHandler actionHandler;
 
@@ -43,6 +44,11 @@ public class EnhancedDashboardView extends BorderPane {
     private int currentTimeWindow = 10;
     private int currentBlockDuration = 3;
 
+    private final ServiceRegistry serviceRegistry = new ServiceRegistry();
+    private MultiServiceSimulator multiSimulator;
+    private ServiceSelectorView serviceSelectorView;
+    private VBox serviceSelectorBox;
+
     public EnhancedDashboardView() {
         enforcer = new RateLimitEnforcer(10, java.time.Duration.ofSeconds(10), java.time.Duration.ofSeconds(3), logger);
         analyzer = new RateLimitAnalyzer(List.of(
@@ -54,6 +60,9 @@ public class EnhancedDashboardView extends BorderPane {
         ));
         actionHandler = new DashboardActionHandler(logger, enforcer, activityTracker, analyzer, reportGenerator, requestLogService, clientRegistry);
         trafficChart = new TrafficChartView(activityTracker, controlPanel::getSelectedClient);
+
+        multiSimulator = new MultiServiceSimulator(logger, enforcer, activityTracker, analyzer, multiRequestLogService);
+        serviceSelectorView = new ServiceSelectorView(serviceRegistry);
 
         statusTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> refreshClientViews()));
         statusTimer.setCycleCount(Timeline.INDEFINITE);
@@ -71,7 +80,34 @@ public class EnhancedDashboardView extends BorderPane {
     private void initLayout() {
         setTop(new TopBarView());
 
-        ScrollPane controlScroll = new ScrollPane(controlPanel);
+        Button manageServicesBtn = new Button("Manage Services");
+        manageServicesBtn.setMaxWidth(Double.MAX_VALUE);
+        manageServicesBtn.setStyle("-fx-background-color: #6366f1; -fx-text-fill: #ffffff; -fx-font-size: 11px; " +
+                "-fx-padding: 4 8; -fx-background-radius: 4;");
+        manageServicesBtn.setOnAction(e -> {
+            ServiceManagementDialog dialog = new ServiceManagementDialog(serviceRegistry);
+            dialog.setOnServicesChanged(() -> {
+                serviceSelectorView.refreshCheckboxes();
+                loadServicesIntoDropdown();
+            });
+            dialog.show((Stage) getScene().getWindow());
+        });
+
+        serviceSelectorBox = new VBox(6,
+            new Label("Multi-Service Mode") {{
+                setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #a78bfa;");
+            }},
+            serviceSelectorView,
+            manageServicesBtn
+        );
+        serviceSelectorBox.setPadding(new Insets(8));
+        serviceSelectorBox.setStyle("-fx-background-color: #1a1f35; -fx-background-radius: 8; " +
+                "-fx-border-color: #6366f1; -fx-border-radius: 8; -fx-border-width: 1;");
+        serviceSelectorBox.setVisible(false);
+        serviceSelectorBox.setManaged(false);
+
+        VBox leftPanel = new VBox(6, controlPanel, serviceSelectorBox);
+        ScrollPane controlScroll = new ScrollPane(leftPanel);
         controlScroll.setFitToWidth(true);
         controlScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         controlScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
@@ -92,19 +128,33 @@ public class EnhancedDashboardView extends BorderPane {
         controlPanel.setOnClientSelected(this::refreshClientViews);
         controlPanel.setOnStatusFilter(this::handleFilterChange);
         controlPanel.setOnTypeFilter(this::handleFilterChange);
-        controlPanel.setOnSendRequest((c, t) -> actionHandler.handleSendRequest(c, t, logPanel, this::refreshClientViews));
-        controlPanel.setOnSimulateBurst(c -> actionHandler.handleSimulateBurst(c, logPanel, this::refreshClientViews));
+        controlPanel.setOnSendRequest((c, t) -> {
+            if (isMultiServiceMode()) {
+                handleMultiServiceSendRequest(c, t);
+            } else {
+                actionHandler.handleSendRequest(c, t, logPanel, this::refreshClientViews);
+            }
+        });
+        controlPanel.setOnSimulateBurst(c -> {
+            if (isMultiServiceMode()) {
+                handleMultiServiceBurst(c);
+            } else {
+                actionHandler.handleSimulateBurst(c, logPanel, this::refreshClientViews);
+            }
+        });
         controlPanel.setOnLoadDataset(() -> actionHandler.handleLoadDataset(getScene().getWindow(), controlPanel, logPanel, this::refreshClientViews));
         controlPanel.setOnRegisterClient(() -> actionHandler.handleRegisterClient(getScene().getWindow(), controlPanel, logPanel));
-        controlPanel.setOnFullReport(actionHandler::handleFullReport);
-        controlPanel.setOnQuickReport(actionHandler::handleQuickReport);
+        controlPanel.setOnFullReport(c -> actionHandler.handleFullReport(c, isMultiServiceMode()));
+        controlPanel.setOnQuickReport(c -> actionHandler.handleQuickReport(c, isMultiServiceMode()));
         controlPanel.setOnCompare(actionHandler::handleCompareAll);
-        controlPanel.setOnExport(c -> actionHandler.handleExport(c, getScene().getWindow(), logPanel));
+        controlPanel.setOnExport(c -> actionHandler.handleExport(c, getScene().getWindow(), logPanel, isMultiServiceMode()));
         controlPanel.setOnClearHistory(this::handleClearHistory);
         controlPanel.setOnDeleteClient(this::handleDeleteClient);
         controlPanel.setOnRenameClient(this::handleRenameClient);
         controlPanel.setOnBarChart(this::handleBarChart);
         controlPanel.setOnSettings(this::handleSettings);
+        controlPanel.setOnClose(this::handleClose);
+        controlPanel.setOnMultiService(this::handleMultiService);
     }
 
     private void handleClearHistory(String clientId) {
@@ -201,22 +251,62 @@ public class EnhancedDashboardView extends BorderPane {
             logPanel.append(String.format("Loaded %d saved clients from data/clients.csv\n", savedClients.size()));
         }
 
+        loadServicesIntoDropdown();
+
+        // Load single-service records
         List<CsvRequestLogEntry> entries = requestLogService.loadAll();
-        if (entries.isEmpty()) {
-            logPanel.append("No previous data found in data/requests.csv\n");
-            return;
-        }
         int loaded = 0;
         for (CsvRequestLogEntry entry : entries) {
+            if (entry.clientId == null) continue;
             ServiceRequest req = new ServiceRequest(entry.clientId, entry.getRequestType(), entry.timestamp);
             logger.logRequest(req);
             activityTracker.trackRequest(req, entry.isBlocked());
             controlPanel.addClientIfAbsent(entry.clientId);
             loaded++;
         }
-        logPanel.append(String.format("Loaded %d records from data/requests.csv\n", loaded));
-        controlPanel.setSelectedClient("ALL_CLIENTS");
-        refreshClientViews();
+        if (loaded > 0) {
+            logPanel.append(String.format("Loaded %d records from data/requests.csv\n", loaded));
+        } else {
+            logPanel.append("No previous data found in data/requests.csv\n");
+        }
+
+        // Load multi-service records
+        List<CsvRequestLogEntry> multiEntries = multiRequestLogService.loadAll();
+        int multiLoaded = 0;
+        for (CsvRequestLogEntry entry : multiEntries) {
+            if (entry.clientId == null) continue;
+            // serviceId holds the service name (e.g. "telegram"), clientId holds the real client
+            ServiceRequest req = new ServiceRequest(
+                entry.clientId,
+                (entry.serviceId != null && !entry.serviceId.isEmpty()) ? entry.serviceId : null,
+                entry.getRequestType(),
+                entry.timestamp
+            );
+            activityTracker.trackRequest(req, entry.isBlocked());
+            controlPanel.addClientIfAbsent(entry.clientId);
+            multiLoaded++;
+        }
+        if (multiLoaded > 0) {
+            logPanel.append(String.format("Loaded %d multi-service records from data/multi_requests.csv\n", multiLoaded));
+        }
+
+        if (loaded > 0 || multiLoaded > 0) {
+            controlPanel.setSelectedClient("ALL_CLIENTS");
+            refreshClientViews();
+        }
+    }
+
+
+    private void loadServicesIntoDropdown() {
+        List<ApiService> services = serviceRegistry.getAll();
+        java.util.List<String> serviceNames = new java.util.ArrayList<>();
+        for (ApiService svc : services) {
+            serviceNames.add(svc.getName());
+        }
+        controlPanel.refreshServiceList(serviceNames);
+        if (!serviceNames.isEmpty()) {
+            logPanel.append(String.format("Loaded %d services from data/api_services.csv\n", serviceNames.size()));
+        }
     }
 
     private void handleBarChart() {
@@ -250,8 +340,121 @@ public class EnhancedDashboardView extends BorderPane {
         scene.getStylesheets().add(
             getClass().getResource("/styles/main.css").toExternalForm()
         );
+        settingsStage.setMinWidth(400);
+        settingsStage.setMinHeight(380);
         settingsStage.setScene(scene);
+        settingsStage.centerOnScreen();
         settingsStage.showAndWait();
+    }
+
+    private void handleClose() {
+        javafx.application.Platform.exit();
+    }
+
+    private void handleMultiService() {
+        boolean visible = serviceSelectorBox.isVisible();
+        serviceSelectorBox.setVisible(!visible);
+        serviceSelectorBox.setManaged(!visible);
+        activityTable.setServiceColumnVisible(!visible);
+        activityTable.setMultiServiceMode(!visible);
+        if (!visible) {
+            controlPanel.setMultiServiceButtonText("Single-Service Mode");
+            logPanel.append("Multi-Service Mode ENABLED - Select services and send requests\n");
+        } else {
+            controlPanel.setMultiServiceButtonText("Multi-Service Mode");
+            logPanel.append("Multi-Service Mode DISABLED\n");
+        }
+        refreshClientViews();
+    }
+
+    private boolean isMultiServiceMode() {
+        return serviceSelectorBox.isVisible();
+    }
+
+    private List<String> getSelectedServiceIds() {
+        return serviceSelectorView.getSelectedServiceIds();
+    }
+
+    private List<String> resolveClientsForRequest(String clientId) {
+        if (clientId == null || clientId.trim().isEmpty()) {
+            return List.of("WebApp");
+        }
+        if ("ALL_CLIENTS".equals(clientId)) {
+            List<String> clients = clientRegistry.loadAll();
+            if (clients.isEmpty()) {
+                return List.of("SuspiciousBot", "WebApp", "PartnerAPI");
+            }
+            return clients;
+        }
+        return List.of(clientId);
+    }
+
+    private void handleMultiServiceSendRequest(String clientId, RequestType type) {
+        List<String> selected = getSelectedServiceIds();
+        if (selected.isEmpty()) {
+            logPanel.append("[MultiService] No services selected!\n");
+            return;
+        }
+
+        if (type == null) {
+            RequestType[] types = RequestType.values();
+            type = types[new java.util.Random().nextInt(types.length)];
+        }
+
+        List<String> clients = resolveClientsForRequest(clientId);
+        for (String client : clients) {
+            logPanel.append(String.format("\n✉️ [%s] Sending %s request to %d service(s)...\n", client, type, selected.size()));
+
+            var results = multiSimulator.sendRequest(client, selected, type);
+            int allowed = 0, blocked = 0;
+
+            for (var entry : results.entrySet()) {
+                var r = entry.getValue();
+                String icon = r.isBlocked() ? "⛔" : "✅";
+                String time = r.request.getTimestamp().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
+                String eventTypeLabel = r.eventType != null ? r.eventType.getDisplayName() : "UNKNOWN";
+
+                String line = String.format("%s [%s] %s -> %s | %s | Quota: %d/%d | Risk: %d | %s\n",
+                        icon, time, client, entry.getKey(), eventTypeLabel,
+                        r.getRemainingQuota(), multiSimulator.getMaxRequests(),
+                        r.riskScore, r.reason);
+                logPanel.append(line);
+
+                if (r.isBlocked()) blocked++; else allowed++;
+            }
+
+            logPanel.append(String.format("✅ [%s] Sent! Allowed: %d | Blocked: %d\n\n", client, allowed, blocked));
+        }
+        refreshClientViews();
+    }
+
+    private void handleMultiServiceBurst(String clientId) {
+        List<String> selected = getSelectedServiceIds();
+        if (selected.isEmpty()) {
+            logPanel.append("[MultiService] No services selected!\n");
+            return;
+        }
+
+        List<String> clients = resolveClientsForRequest(clientId);
+        for (String client : clients) {
+            logPanel.append(String.format("\n⚡ [%s] Burst simulation: %d requests over %ds for %d service(s)...\n",
+                    client, burstCount, burstDuration, selected.size()));
+
+            var results = multiSimulator.simulateBurst(client, selected, burstCount, java.time.Duration.ofSeconds(burstDuration));
+            int totalAllowed = 0, totalBlocked = 0;
+
+            for (var entry : results.entrySet()) {
+                var r = entry.getValue();
+                logPanel.append(String.format("  %s -> %s - Allowed: %d | Blocked: %d\n", client, r.serviceId, r.allowed, r.blocked));
+                totalAllowed += r.allowed;
+                totalBlocked += r.blocked;
+            }
+
+            int total = burstCount * selected.size();
+            logPanel.append(String.format("⚡ [%s] Burst Done! Total: %d | Allowed: %d | Blocked: %d\n\n",
+                    client, total, totalAllowed, totalBlocked));
+        }
+        refreshClientViews();
     }
 
     private void applySettings(SettingsView settingsView, Stage settingsStage) {

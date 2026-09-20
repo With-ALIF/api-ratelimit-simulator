@@ -45,3 +45,8 @@ Thumbs.db
 *.tmp
 *.bak
 *.swp
+
+# =========================
+# Local CSV Data (auto-created on first run)
+# =========================
+data/*.csv

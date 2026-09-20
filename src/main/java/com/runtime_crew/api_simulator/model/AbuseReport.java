@@ -61,6 +61,19 @@ public class AbuseReport {
         return level == ViolationLevel.WARNING || level == ViolationLevel.CRITICAL;
     }
 
+    public int getRiskScore() {
+        if (violations.isEmpty()) return 0;
+        int base = violations.size() * 15;
+        if (level == ViolationLevel.WARNING) base += 20;
+        if (level == ViolationLevel.CRITICAL) base += 40;
+        return Math.min(base, 100);
+    }
+
+    public String getSummary() {
+        if (!hasViolations()) return "No violations";
+        return String.join("; ", violations);
+    }
+
     @Override
     public String toString() {
         return "AbuseReport{" +

@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 public class ControlPanelView extends VBox {
 
     private final ComboBox<String> clientBox = new ComboBox<>();
+    private final ComboBox<String> serviceBox = new ComboBox<>();
     private final ComboBox<String> typeBox = new ComboBox<>();
     private final ComboBox<String> statusFilterBox = new ComboBox<>();
     private final Label quotaLabel = new Label("Quota: --");
@@ -36,6 +37,8 @@ public class ControlPanelView extends VBox {
     private final Button exportBtn = createButton("Export Report", "");
     private final Button clearBtn = createButton("Clear History", "btn-danger");
     private final Button settingsBtn = createButton("Settings", "");
+    private final Button closeBtn = createButton("Close", "btn-danger");
+    private final Button multiServiceBtn = createButton("Multi-Service Mode", "btn-accent");
 
     public ControlPanelView(StatsPanel statsPanel) {
         super(12);
@@ -51,6 +54,16 @@ public class ControlPanelView extends VBox {
         clientBox.setPromptText("Select Client");
         clientBox.setMaxWidth(Double.MAX_VALUE);
         VBox clientSection = new VBox(4, clientTitle, clientBox);
+
+        Label serviceTitle = new Label("Select Service");
+        serviceTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #a78bfa;");
+        serviceBox.getItems().addAll("ALL_SERVICES", "Facebook", "Messenger", "Telegram", "Instagram");
+        serviceBox.setValue("ALL_SERVICES");
+        serviceBox.setPromptText("Select Service");
+        serviceBox.setMaxWidth(Double.MAX_VALUE);
+        serviceBox.setStyle("-fx-background-color: #0f172a; -fx-border-color: #6366f1; " +
+                "-fx-border-radius: 6; -fx-background-radius: 6;");
+        VBox serviceSection = new VBox(4, serviceTitle, serviceBox);
 
         Label typeTitle = new Label("Request Type");
         typeTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
@@ -90,6 +103,29 @@ public class ControlPanelView extends VBox {
         Label reportsHeader = new Label("Reports & Diagnostics");
         reportsHeader.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
 
+        GridPane actionsGrid = new GridPane();
+        actionsGrid.setHgap(6);
+        actionsGrid.setVgap(6);
+        actionsGrid.setPadding(new Insets(2, 0, 2, 0));
+        ColumnConstraints actionCol = new ColumnConstraints();
+        actionCol.setPercentWidth(50);
+        actionsGrid.getColumnConstraints().addAll(actionCol, actionCol);
+        actionsGrid.add(sendBtn, 0, 0);
+        actionsGrid.add(burstBtn, 1, 0);
+        actionsGrid.add(loadDatasetBtn, 0, 1);
+        actionsGrid.add(registerBtn, 1, 1);
+        actionsGrid.add(renameBtn, 0, 2);
+        actionsGrid.add(deleteBtn, 1, 2);
+        actionsGrid.add(multiServiceBtn, 0, 3, 2, 1);
+        HBox.setHgrow(actionsGrid, Priority.ALWAYS);
+        sendBtn.setMaxWidth(Double.MAX_VALUE);
+        burstBtn.setMaxWidth(Double.MAX_VALUE);
+        loadDatasetBtn.setMaxWidth(Double.MAX_VALUE);
+        registerBtn.setMaxWidth(Double.MAX_VALUE);
+        renameBtn.setMaxWidth(Double.MAX_VALUE);
+        deleteBtn.setMaxWidth(Double.MAX_VALUE);
+        multiServiceBtn.setMaxWidth(Double.MAX_VALUE);
+
         GridPane reportsGrid = new GridPane();
         reportsGrid.setHgap(6);
         reportsGrid.setVgap(6);
@@ -115,10 +151,10 @@ public class ControlPanelView extends VBox {
         this.setPrefWidth(300);
         this.getChildren().addAll(
             headerBox, new Separator(),
-            clientSection, typeSection, filterSection, statusSection, new Separator(),
-            actionsHeader, sendBtn, burstBtn, loadDatasetBtn, registerBtn, renameBtn, deleteBtn, new Separator(),
+            clientSection, serviceSection, typeSection, filterSection, statusSection, new Separator(),
+            actionsHeader, actionsGrid, new Separator(),
             reportsHeader, reportsGrid, new Separator(),
-            settingsBtn, statsPanel
+            settingsBtn, closeBtn, statsPanel
         );
     }
 
@@ -151,13 +187,19 @@ public class ControlPanelView extends VBox {
     public void setOnExport(Consumer<String> c) { exportBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
     public void setOnClearHistory(Consumer<String> c) { clearBtn.setOnAction(e -> c.accept(clientBox.getValue())); }
     public void setOnSettings(Runnable action) { settingsBtn.setOnAction(e -> action.run()); }
+    public void setOnClose(Runnable action) { closeBtn.setOnAction(e -> action.run()); }
+    public void setOnMultiService(Runnable action) { multiServiceBtn.setOnAction(e -> action.run()); }
+    public void setMultiServiceButtonText(String text) { multiServiceBtn.setText(text); }
+    public String getMultiServiceButtonText() { return multiServiceBtn.getText(); }
 
     public void updateBurstLabel(int count, int duration) {
         burstBtn.setText(String.format("Simulate Burst (%d Req / %ds)", count, duration));
     }
 
     public void addClientIfAbsent(String clientId) {
-        if (!clientBox.getItems().contains(clientId)) clientBox.getItems().add(clientId);
+        if (clientId != null && !clientId.startsWith("svc_") && !clientBox.getItems().contains(clientId)) {
+            clientBox.getItems().add(clientId);
+        }
     }
     public void removeClientFromBox(String clientId) {
         clientBox.getItems().remove(clientId);
@@ -170,6 +212,17 @@ public class ControlPanelView extends VBox {
     }
     public void setSelectedClient(String clientId) { clientBox.setValue(clientId); }
     public String getSelectedClient() { return clientBox.getValue(); }
+    public String getSelectedService() { return serviceBox.getValue(); }
+    public void setSelectedService(String serviceId) { serviceBox.setValue(serviceId); }
+    public void addServiceIfAbsent(String serviceId) {
+        if (!serviceBox.getItems().contains(serviceId)) serviceBox.getItems().add(serviceId);
+    }
+    public void refreshServiceList(java.util.List<String> services) {
+        serviceBox.getItems().clear();
+        serviceBox.getItems().add("ALL_SERVICES");
+        serviceBox.getItems().addAll(services);
+        serviceBox.setValue("ALL_SERVICES");
+    }
     public String getSelectedStatus() { return statusFilterBox.getValue(); }
     public String getSelectedType() { return typeBox.getValue() != null ? typeBox.getValue().toString() : "ALL"; }
 

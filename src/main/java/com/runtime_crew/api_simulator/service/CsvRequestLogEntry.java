@@ -8,6 +8,7 @@ public class CsvRequestLogEntry {
 
     public String requestId;
     public String clientId;
+    public String serviceId;
     public String endpoint;
     public String method;
     public LocalDateTime timestamp;
@@ -20,6 +21,9 @@ public class CsvRequestLogEntry {
     public boolean abuseDetected;
     public String abuseReason;
     public String severity;
+    public String eventType;
+    public int riskScore;
+    public String reason;
 
     public boolean isBlocked() {
         return "BLOCKED".equals(status);

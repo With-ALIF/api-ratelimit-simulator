@@ -34,7 +34,7 @@ public class EnhancedReportGeneratorTest {
             activities.put(client, act);
         }
 
-        String report = generator.generateAllClientsFullReport(activities);
+        String report = generator.generateAllClientsFullReport(activities, false);
         System.out.println("====== GENERATED REPORT TEST OUTPUT ======");
         System.out.println(report);
         System.out.println("==========================================");
