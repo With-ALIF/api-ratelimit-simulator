@@ -231,9 +231,21 @@ public class DashboardActionHandler {
         ReportDialogHelper.showReport("Quick Summary - " + clientId, reportGenerator.generateUsageReport(clientId, activityTracker.getActivity(clientId), log, abuse));
     }
 
-    public void handleCompareAll() {
-        if (activityTracker.getAllActivities().isEmpty()) { ReportDialogHelper.showAlert("No client data available for comparison!"); return; }
-        ReportDialogHelper.showComparisonTable("Multi-Client Comparison Report", activityTracker.getAllActivities());
+    public void handleCompareAll(boolean multiServiceMode) {
+        var allActivities = activityTracker.getAllActivities();
+        if (allActivities.isEmpty()) { ReportDialogHelper.showAlert("No client data available for comparison!"); return; }
+
+        if (multiServiceMode) {
+            var perService = reportGenerator.buildServiceComparison(allActivities);
+            if (perService.isEmpty()) {
+                ReportDialogHelper.showAlert("No multi-service requests available for comparison!");
+                return;
+            }
+            ReportDialogHelper.showComparisonTable("Multi-Service Comparison Report", "SERVICE", perService);
+            return;
+        }
+
+        ReportDialogHelper.showComparisonTable("Multi-Client Comparison Report", allActivities);
     }
 
     public void handleExport(String clientId, Window window, LogPanel logPanel, boolean multiServiceMode) {

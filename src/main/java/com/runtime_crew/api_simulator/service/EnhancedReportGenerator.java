@@ -209,24 +209,24 @@ sb.append("  ").append(String.format("%-18s %5.1f%%  %s", "Success Rate:", total
 sb.append("\n");
 
         sb.append("  PER CLIENT BREAKDOWN\n");
-        sb.append("  ").append(String.format("%-14s %6s %8s %8s %9s", "CLIENT", "TOTAL", "ALLOWED", "BLOCKED", "RATE")).append("\n");
-        sb.append("  ").append("-".repeat(50)).append("\n");
+        String clientNameCol = "%-" + columnWidth("CLIENT", allActivities.keySet()) + "s";
+        String clientRowFmt = "  " + clientNameCol + "  %7d  %9d  %9d  %8s";
+        String clientHeader = String.format("  " + clientNameCol + "  %7s  %9s  %9s  %8s",
+            "CLIENT", "TOTAL", "ALLOWED", "BLOCKED", "RATE");
+        sb.append(clientHeader).append("\n");
+        sb.append(tableRule(clientHeader)).append("\n");
         for (Map.Entry<String, ClientActivity> entry : allActivities.entrySet()) {
             ClientActivity a = entry.getValue();
-            sb.append("  ").append(String.format("%-14s %6d %8d %8d %8.1f%%",
+            sb.append(String.format(clientRowFmt,
                 entry.getKey(), a.getTotalRequests(), a.getAllowedRequests(),
-                a.getBlockedRequests(), a.getSuccessRate())).append("\n");
+                a.getBlockedRequests(), formatRate(a.getSuccessRate()))).append("\n");
         }
-        sb.append("  ").append("-".repeat(50)).append("\n");
-        sb.append("  ").append(String.format("%-14s %6d %8d %8d %8.1f%%",
-            "TOTAL", totalReqs, totalAllowed, totalBlocked, totalRate)).append("\n");
+        sb.append(tableRule(clientHeader)).append("\n");
+        sb.append(String.format(clientRowFmt,
+            "TOTAL", totalReqs, totalAllowed, totalBlocked, formatRate(totalRate))).append("\n");
         sb.append("\n");
 
         if (multiServiceMode) {
-            sb.append("  SERVICE BREAKDOWN\n");
-            sb.append("  ").append(String.format("%-20s %8s %10s %10s", "SERVICE", "TOTAL", "ALLOWED", "BLOCKED")).append("\n");
-            sb.append("  ").append("-".repeat(55)).append("\n");
-
             Map<String, int[]> globalServiceStats = new LinkedHashMap<>();
             for (Map.Entry<String, ClientActivity> entry : allActivities.entrySet()) {
                 ClientActivity a = entry.getValue();
@@ -242,12 +242,28 @@ sb.append("\n");
                     else stats[1]++;
                 }
             }
+
+            sb.append("  SERVICE BREAKDOWN\n");
+            String serviceNameCol = "%-" + columnWidth("SERVICE", globalServiceStats.keySet()) + "s";
+            String serviceRowFmt = "  " + serviceNameCol + "  %7d  %9d  %9d";
+            String serviceHeader = String.format("  " + serviceNameCol + "  %7s  %9s  %9s",
+                "SERVICE", "TOTAL", "ALLOWED", "BLOCKED");
+            sb.append(serviceHeader).append("\n");
+            sb.append(tableRule(serviceHeader)).append("\n");
+
+            int serviceTotalReqs = 0, serviceTotalAllowed = 0, serviceTotalBlocked = 0;
             for (Map.Entry<String, int[]> svcEntry : globalServiceStats.entrySet()) {
                 int[] stats = svcEntry.getValue();
-                sb.append("  ").append(String.format("%-20s %8d %10d %10d",
+                sb.append(String.format(serviceRowFmt,
                     svcEntry.getKey(), stats[0], stats[1], stats[2])).append("\n");
+                serviceTotalReqs += stats[0];
+                serviceTotalAllowed += stats[1];
+                serviceTotalBlocked += stats[2];
             }
-            sb.append("  ").append("-".repeat(55)).append("\n");
+
+            sb.append(tableRule(serviceHeader)).append("\n");
+            sb.append(String.format(serviceRowFmt,
+                "TOTAL", serviceTotalReqs, serviceTotalAllowed, serviceTotalBlocked)).append("\n");
             sb.append("\n");
         }
 
@@ -300,6 +316,27 @@ sb.append("\n");
         return "-".repeat(W - 2);
     }
 
+    /** Formatting helper: right-aligns a percentage label inside a fixed 8-char cell. */
+    private static String formatRate(double rate) {
+        return String.format("%.1f%%", rate);
+    }
+
+    /** Name-column width that fits the header and every label, plus 2 chars of padding. */
+    private static int columnWidth(String header, Collection<String> labels) {
+        int width = header != null ? header.length() : 0;
+        if (labels != null) {
+            for (String label : labels) {
+                if (label != null) width = Math.max(width, label.length());
+            }
+        }
+        return width + 2;
+    }
+
+    /** Separator line that spans exactly the same width as the given table header row. */
+    private static String tableRule(String headerLine) {
+        return "  " + "-".repeat(Math.max(0, headerLine.length() - 2));
+    }
+
     private String getSeverityDot(String severity) {
         return "\u25CF";
     }
@@ -335,6 +372,30 @@ sb.append("\n");
             distribution.merge(request.getRequestType(), 1, Integer::sum);
         }
         return distribution;
+    }
+
+    /**
+     * Re-keys the tracked client activity by service name so reports and the
+     * comparison table can present a per-service (multi-service mode) view.
+     * Records without a service (plain single-service requests) are skipped,
+     * matching the multi-service filtering used by the dashboard.
+     */
+    public Map<String, ClientActivity> buildServiceComparison(Map<String, ClientActivity> allActivities) {
+        Map<String, ClientActivity> perService = new TreeMap<>();
+        if (allActivities == null) return perService;
+
+        for (ClientActivity activity : allActivities.values()) {
+            for (ClientActivityTracker.ActivityRecord record : activity.getRecords()) {
+                String service = record.getService();
+                if (service == null || service.trim().isEmpty() || "-".equals(service.trim())) continue;
+
+                ServiceRequest request = new ServiceRequest(
+                        record.getClientId(), service.trim(), record.getRequestType(), record.getTimestamp());
+                perService.computeIfAbsent(service.trim(), ClientActivity::new)
+                        .recordActivity(request, record.isBlocked());
+            }
+        }
+        return perService;
     }
 
     public String generateAllClientsFullReport(Map<String, ClientActivity> allActivities, boolean multiServiceMode) {

@@ -128,6 +128,7 @@ public class EnhancedDashboardView extends BorderPane {
         controlPanel.setOnClientSelected(this::refreshClientViews);
         controlPanel.setOnStatusFilter(this::handleFilterChange);
         controlPanel.setOnTypeFilter(this::handleFilterChange);
+        controlPanel.setOnServiceFilter(this::handleFilterChange);
         controlPanel.setOnSendRequest((c, t) -> {
             if (isMultiServiceMode()) {
                 handleMultiServiceSendRequest(c, t);
@@ -146,7 +147,7 @@ public class EnhancedDashboardView extends BorderPane {
         controlPanel.setOnRegisterClient(() -> actionHandler.handleRegisterClient(getScene().getWindow(), controlPanel, logPanel));
         controlPanel.setOnFullReport(c -> actionHandler.handleFullReport(c, isMultiServiceMode()));
         controlPanel.setOnQuickReport(c -> actionHandler.handleQuickReport(c, isMultiServiceMode()));
-        controlPanel.setOnCompare(actionHandler::handleCompareAll);
+        controlPanel.setOnCompare(() -> actionHandler.handleCompareAll(isMultiServiceMode()));
         controlPanel.setOnExport(c -> actionHandler.handleExport(c, getScene().getWindow(), logPanel, isMultiServiceMode()));
         controlPanel.setOnClearHistory(this::handleClearHistory);
         controlPanel.setOnDeleteClient(this::handleDeleteClient);
@@ -270,12 +271,10 @@ public class EnhancedDashboardView extends BorderPane {
             logPanel.append("No previous data found in data/requests.csv\n");
         }
 
-        // Load multi-service records
         List<CsvRequestLogEntry> multiEntries = multiRequestLogService.loadAll();
         int multiLoaded = 0;
         for (CsvRequestLogEntry entry : multiEntries) {
             if (entry.clientId == null) continue;
-            // serviceId holds the service name (e.g. "telegram"), clientId holds the real client
             ServiceRequest req = new ServiceRequest(
                 entry.clientId,
                 (entry.serviceId != null && !entry.serviceId.isEmpty()) ? entry.serviceId : null,
@@ -310,11 +309,14 @@ public class EnhancedDashboardView extends BorderPane {
     }
 
     private void handleBarChart() {
-        BarChartView barChartView = new BarChartView(activityTracker, controlPanel::getSelectedClient);
+        boolean multiServiceMode = isMultiServiceMode();
+        BarChartView barChartView = new BarChartView(activityTracker, controlPanel::getSelectedClient, multiServiceMode);
 
         Stage chartStage = new Stage();
         chartStage.initModality(Modality.NONE);
-        chartStage.setTitle("Bar Chart - Request Distribution");
+        chartStage.setTitle(multiServiceMode
+                ? "Bar Chart - Multi-Service (Allowed vs Blocked per Service)"
+                : "Bar Chart - Request Distribution");
         chartStage.setMinWidth(600);
         chartStage.setMinHeight(350);
 
@@ -353,11 +355,13 @@ public class EnhancedDashboardView extends BorderPane {
 
     private void handleMultiService() {
         boolean visible = serviceSelectorBox.isVisible();
-        serviceSelectorBox.setVisible(!visible);
-        serviceSelectorBox.setManaged(!visible);
-        activityTable.setServiceColumnVisible(!visible);
-        activityTable.setMultiServiceMode(!visible);
-        if (!visible) {
+        boolean newVisible = !visible;
+        serviceSelectorBox.setVisible(newVisible);
+        serviceSelectorBox.setManaged(newVisible);
+        controlPanel.setServiceSectionVisible(newVisible);
+        activityTable.setServiceColumnVisible(newVisible);
+        activityTable.setMultiServiceMode(newVisible);
+        if (newVisible) {
             controlPanel.setMultiServiceButtonText("Single-Service Mode");
             logPanel.append("Multi-Service Mode ENABLED - Select services and send requests\n");
         } else {
@@ -588,5 +592,6 @@ public class EnhancedDashboardView extends BorderPane {
     private void applyFilters() {
         activityTable.setStatusFilter(controlPanel.getSelectedStatus());
         activityTable.setTypeFilter(controlPanel.getSelectedType());
+        activityTable.setServiceFilter(controlPanel.getSelectedService());
     }
 }

@@ -43,7 +43,7 @@ public class MultiServiceDashboardView extends BorderPane {
                 new RetryAbusePolicy(8, Duration.ofSeconds(2))
         ));
         simulator = new MultiServiceSimulator(logger, enforcer, activityTracker, analyzer, requestLogService);
-        actionHandler = new MultiServiceActionHandler(simulator, activityTracker);
+        actionHandler = new MultiServiceActionHandler(simulator);
         selectorView = new ServiceSelectorView(serviceRegistry);
         barChartView = new MultiServiceBarChartView(activityTracker);
         manageBtn = createButton("\u2699\uFE0F Manage Services", "#6366f1");

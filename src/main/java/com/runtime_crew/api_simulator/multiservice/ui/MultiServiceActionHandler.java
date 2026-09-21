@@ -1,11 +1,9 @@
 package com.runtime_crew.api_simulator.multiservice.ui;
 
-import com.runtime_crew.api_simulator.model.EventType;
 import com.runtime_crew.api_simulator.model.RequestType;
 import com.runtime_crew.api_simulator.multiservice.service.MultiServiceSimulator;
 import com.runtime_crew.api_simulator.multiservice.service.MultiServiceSimulator.BurstResult;
 import com.runtime_crew.api_simulator.multiservice.service.MultiServiceSimulator.ServiceResult;
-import com.runtime_crew.api_simulator.service.ClientActivityTracker;
 import com.runtime_crew.api_simulator.ui.dashboard.LogPanel;
 
 import java.time.Duration;
@@ -17,14 +15,12 @@ import java.util.Random;
 public class MultiServiceActionHandler {
 
     private final MultiServiceSimulator simulator;
-    private final ClientActivityTracker activityTracker;
     private final Random random = new Random();
     private int burstCount = 20;
     private int burstDuration = 10;
 
-    public MultiServiceActionHandler(MultiServiceSimulator simulator, ClientActivityTracker activityTracker) {
+    public MultiServiceActionHandler(MultiServiceSimulator simulator) {
         this.simulator = simulator;
-        this.activityTracker = activityTracker;
     }
 
     public void handleSendRequest(List<String> serviceIds, RequestType type, LogPanel logPanel, Runnable onUpdated) {

@@ -19,11 +19,20 @@ public class ReportDialogHelper {
     }
 
     public static void showComparisonTable(String title, Map<String, ClientActivity> allActivities) {
-        showComparisonTable(null, title, allActivities);
+        showComparisonTable((Window) null, title, allActivities);
+    }
+
+    public static void showComparisonTable(String title, String firstColumnHeader, Map<String, ClientActivity> allActivities) {
+        showComparisonTable(null, title, allActivities, firstColumnHeader);
     }
 
     public static void showComparisonTable(Window owner, String title, Map<String, ClientActivity> allActivities) {
-        ReportViewDialog.showComparisonTable(owner, title, allActivities);
+        showComparisonTable(owner, title, allActivities, "CLIENT");
+    }
+
+    public static void showComparisonTable(Window owner, String title, Map<String, ClientActivity> allActivities,
+                                           String firstColumnHeader) {
+        ReportViewDialog.showComparisonTable(owner, title, allActivities, firstColumnHeader);
     }
 
     public static void showAlert(String message) {

@@ -101,6 +101,11 @@ public class ReportViewDialog {
     }
 
     public static void showComparisonTable(Window owner, String title, Map<String, ClientActivity> allActivities) {
+        showComparisonTable(owner, title, allActivities, "CLIENT");
+    }
+
+    public static void showComparisonTable(Window owner, String title, Map<String, ClientActivity> allActivities,
+                                           String firstColumnHeader) {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         if (owner != null) stage.initOwner(owner);
@@ -163,7 +168,9 @@ public class ReportViewDialog {
 
         table.setItems(rows);
 
-        String[] headers = {"CLIENT", "REQUESTS", "ALLOWED", "BLOCKED", "SUCCESS %", "LAST ACT."};
+        String firstHeader = (firstColumnHeader != null && !firstColumnHeader.trim().isEmpty())
+                ? firstColumnHeader.trim() : "CLIENT";
+        String[] headers = {firstHeader, "REQUESTS", "ALLOWED", "BLOCKED", "SUCCESS %", "LAST ACT."};
         int[] widths = {140, 100, 130, 130, 110, 130};
 
         for (int i = 0; i < headers.length; i++) {

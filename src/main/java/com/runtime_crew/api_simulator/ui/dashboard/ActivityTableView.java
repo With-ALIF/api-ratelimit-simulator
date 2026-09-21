@@ -21,6 +21,7 @@ public class ActivityTableView extends VBox {
     private List<ActivityRecord> allRecords = new ArrayList<>();
     private String statusFilter = "ALL";
     private String typeFilter = "ALL";
+    private String serviceFilter = "ALL_SERVICES";
     private boolean multiServiceMode = false;
 
     public ActivityTableView() {
@@ -159,6 +160,11 @@ public class ActivityTableView extends VBox {
         applyFilters();
     }
 
+    public void setServiceFilter(String service) {
+        this.serviceFilter = (service != null && !service.isEmpty()) ? service : "ALL_SERVICES";
+        applyFilters();
+    }
+
     private void applyFilters() {
         activityData.clear();
         for (ActivityRecord r : allRecords) {
@@ -168,6 +174,12 @@ public class ActivityTableView extends VBox {
                 String svc = r.getService();
                 boolean isSingleService = (svc == null || svc.trim().isEmpty() || "-".equals(svc));
                 if (isSingleService) continue;
+                if (!"ALL_SERVICES".equalsIgnoreCase(serviceFilter) && svc != null) {
+                    boolean match = svc.equalsIgnoreCase(serviceFilter)
+                            || svc.equalsIgnoreCase("svc_" + serviceFilter)
+                            || serviceFilter.equalsIgnoreCase("svc_" + svc);
+                    if (!match) continue;
+                }
             }
             if (statusMatch && typeMatch) {
                 activityData.add(r);

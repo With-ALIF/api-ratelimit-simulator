@@ -2,7 +2,6 @@ package com.runtime_crew.api_simulator.multiservice.ui;
 
 import com.runtime_crew.api_simulator.multiservice.model.ApiService;
 import com.runtime_crew.api_simulator.multiservice.service.ServiceRegistry;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;

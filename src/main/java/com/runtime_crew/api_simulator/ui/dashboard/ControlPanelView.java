@@ -23,6 +23,7 @@ public class ControlPanelView extends VBox {
     private final Label riskLevelLabel = new Label("NORMAL");
     private final Label blockLabel = new Label();
     private final StatsPanel statsPanel;
+    private VBox serviceSection;
 
     private final Button sendBtn = createButton("Send Request", "btn-primary");
     private final Button burstBtn = createButton("Simulate Burst", "btn-warning");
@@ -63,7 +64,10 @@ public class ControlPanelView extends VBox {
         serviceBox.setMaxWidth(Double.MAX_VALUE);
         serviceBox.setStyle("-fx-background-color: #0f172a; -fx-border-color: #6366f1; " +
                 "-fx-border-radius: 6; -fx-background-radius: 6;");
-        VBox serviceSection = new VBox(4, serviceTitle, serviceBox);
+        serviceSection = new VBox(4, serviceTitle, serviceBox);
+        serviceSection.setVisible(false);
+        serviceSection.setManaged(false);
+        serviceBox.setDisable(true);
 
         Label typeTitle = new Label("Request Type");
         typeTitle.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #ffffff;");
@@ -168,6 +172,17 @@ public class ControlPanelView extends VBox {
     public void setOnClientSelected(Consumer<String> consumer) { clientBox.setOnAction(e -> consumer.accept(clientBox.getValue())); }
     public void setOnStatusFilter(Consumer<String> consumer) { statusFilterBox.setOnAction(e -> consumer.accept(statusFilterBox.getValue())); }
     public void setOnTypeFilter(Consumer<Object> consumer) { typeBox.setOnAction(e -> consumer.accept(typeBox.getValue())); }
+    public void setOnServiceFilter(Consumer<String> consumer) { serviceBox.setOnAction(e -> consumer.accept(serviceBox.getValue())); }
+    public void setServiceSectionVisible(boolean visible) {
+        if (serviceSection != null) {
+            serviceSection.setVisible(visible);
+            serviceSection.setManaged(visible);
+        }
+        serviceBox.setDisable(!visible);
+    }
+    public boolean isServiceSectionVisible() {
+        return serviceSection != null && serviceSection.isVisible();
+    }
     public void setOnSendRequest(BiConsumer<String, RequestType> c) {
         sendBtn.setOnAction(e -> {
             String val = typeBox.getValue();
