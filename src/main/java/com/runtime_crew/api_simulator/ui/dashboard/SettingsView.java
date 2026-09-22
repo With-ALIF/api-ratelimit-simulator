@@ -19,7 +19,7 @@ public class SettingsView extends VBox {
     private final Label successLabel = new Label();
 
     private static final String DEF_MAX = "10";
-    private static final String DEF_WINDOW = "10";
+    private static final String DEF_WINDOW = "3";
     private static final String DEF_BLOCK = "3";
     private static final String DEF_BURST_COUNT = "20";
     private static final String DEF_BURST_DUR = "10";

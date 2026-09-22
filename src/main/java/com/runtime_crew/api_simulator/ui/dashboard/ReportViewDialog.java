@@ -65,14 +65,16 @@ public class ReportViewDialog {
         header.setAlignment(Pos.CENTER_LEFT);
         header.setStyle("-fx-background-color: #1e293b; -fx-padding: 16 20; -fx-border-color: #334155; -fx-border-width: 0 0 1 0;");
 
+        String monoFamily = getMonospaceFontFamily();
         TextArea textArea = new TextArea(content);
         textArea.setEditable(false);
         textArea.setWrapText(false);
+        textArea.setFont(javafx.scene.text.Font.font(monoFamily, 13));
         textArea.setStyle(
             "-fx-control-inner-background: #090d16; " +
             "-fx-text-fill: #38bdf8; " +
-            "-fx-font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace; " +
-            "-fx-font-size: 12.5px; " +
+            "-fx-font-family: '" + monoFamily + "'; " +
+            "-fx-font-size: 13px; " +
             "-fx-border-color: #334155; " +
             "-fx-border-radius: 8; -fx-background-radius: 8;"
         );
@@ -274,5 +276,13 @@ public class ReportViewDialog {
                 ReportDialogHelper.showAlert("Export failed: " + ex.getMessage());
             }
         }
+    }
+
+    public static String getMonospaceFontFamily() {
+        var families = javafx.scene.text.Font.getFamilies();
+        for (String f : java.util.List.of("JetBrains Mono", "Fira Code", "Consolas", "Ubuntu Mono", "DejaVu Sans Mono", "Liberation Mono", "Courier New")) {
+            if (families.contains(f)) return f;
+        }
+        return "Monospaced";
     }
 }

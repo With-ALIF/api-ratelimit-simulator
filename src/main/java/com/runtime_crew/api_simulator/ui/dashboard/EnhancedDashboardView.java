@@ -28,7 +28,8 @@ public class EnhancedDashboardView extends BorderPane {
     private RateLimitAnalyzer analyzer;
     private final EnhancedReportGenerator reportGenerator = new EnhancedReportGenerator();
     private final RequestLogService requestLogService = new RequestLogService();
-    private final RequestLogService multiRequestLogService = new RequestLogService(java.nio.file.Path.of("data", "multi_requests.csv"));
+    private final RequestLogService multiRequestLogService = new RequestLogService(
+            java.nio.file.Path.of("data", "multi_requests.csv"));
     private final ClientRegistryService clientRegistry = new ClientRegistryService();
     private final DashboardActionHandler actionHandler;
 
@@ -41,7 +42,7 @@ public class EnhancedDashboardView extends BorderPane {
     private int burstCount = 20;
     private int burstDuration = 10;
     private int currentMaxRequests = 10;
-    private int currentTimeWindow = 10;
+    private int currentTimeWindow = 3;
     private int currentBlockDuration = 3;
 
     private final ServiceRegistry serviceRegistry = new ServiceRegistry();
@@ -50,15 +51,15 @@ public class EnhancedDashboardView extends BorderPane {
     private VBox serviceSelectorBox;
 
     public EnhancedDashboardView() {
-        enforcer = new RateLimitEnforcer(10, java.time.Duration.ofSeconds(10), java.time.Duration.ofSeconds(3), logger);
+        enforcer = new RateLimitEnforcer(10, java.time.Duration.ofSeconds(3), java.time.Duration.ofSeconds(3), logger);
         analyzer = new RateLimitAnalyzer(List.of(
-            new FixedWindowPolicy(5, java.time.Duration.ofSeconds(10)),
-            new SlidingWindowPolicy(5, java.time.Duration.ofSeconds(10)),
-            new BurstDetectionPolicy(4, java.time.Duration.ofSeconds(3)),
-            new AbnormalPatternPolicy(3),
-            new RetryAbusePolicy(8, java.time.Duration.ofSeconds(2))
-        ));
-        actionHandler = new DashboardActionHandler(logger, enforcer, activityTracker, analyzer, reportGenerator, requestLogService, clientRegistry);
+                new FixedWindowPolicy(5, java.time.Duration.ofSeconds(3)),
+                new SlidingWindowPolicy(5, java.time.Duration.ofSeconds(3)),
+                new BurstDetectionPolicy(4, java.time.Duration.ofSeconds(3)),
+                new AbnormalPatternPolicy(3),
+                new RetryAbusePolicy(8, java.time.Duration.ofSeconds(2))));
+        actionHandler = new DashboardActionHandler(logger, enforcer, activityTracker, analyzer, reportGenerator,
+                requestLogService, clientRegistry);
         trafficChart = new TrafficChartView(activityTracker, controlPanel::getSelectedClient);
 
         multiSimulator = new MultiServiceSimulator(logger, enforcer, activityTracker, analyzer, multiRequestLogService);
@@ -94,12 +95,13 @@ public class EnhancedDashboardView extends BorderPane {
         });
 
         serviceSelectorBox = new VBox(6,
-            new Label("Multi-Service Mode") {{
-                setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #a78bfa;");
-            }},
-            serviceSelectorView,
-            manageServicesBtn
-        );
+                new Label("Multi-Service Mode") {
+                    {
+                        setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-text-fill: #a78bfa;");
+                    }
+                },
+                serviceSelectorView,
+                manageServicesBtn);
         serviceSelectorBox.setPadding(new Insets(8));
         serviceSelectorBox.setStyle("-fx-background-color: #1a1f35; -fx-background-radius: 8; " +
                 "-fx-border-color: #6366f1; -fx-border-radius: 8; -fx-border-width: 1;");
@@ -125,6 +127,7 @@ public class EnhancedDashboardView extends BorderPane {
     }
 
     private void setupEvents() {
+        serviceSelectorView.setOnSelectionChanged(ids -> refreshClientViews());
         controlPanel.setOnClientSelected(this::refreshClientViews);
         controlPanel.setOnStatusFilter(this::handleFilterChange);
         controlPanel.setOnTypeFilter(this::handleFilterChange);
@@ -143,12 +146,15 @@ public class EnhancedDashboardView extends BorderPane {
                 actionHandler.handleSimulateBurst(c, logPanel, this::refreshClientViews);
             }
         });
-        controlPanel.setOnLoadDataset(() -> actionHandler.handleLoadDataset(getScene().getWindow(), controlPanel, logPanel, this::refreshClientViews));
-        controlPanel.setOnRegisterClient(() -> actionHandler.handleRegisterClient(getScene().getWindow(), controlPanel, logPanel));
+        controlPanel.setOnLoadDataset(() -> actionHandler.handleLoadDataset(getScene().getWindow(), controlPanel,
+                logPanel, this::refreshClientViews));
+        controlPanel.setOnRegisterClient(
+                () -> actionHandler.handleRegisterClient(getScene().getWindow(), controlPanel, logPanel));
         controlPanel.setOnFullReport(c -> actionHandler.handleFullReport(c, isMultiServiceMode()));
         controlPanel.setOnQuickReport(c -> actionHandler.handleQuickReport(c, isMultiServiceMode()));
         controlPanel.setOnCompare(() -> actionHandler.handleCompareAll(isMultiServiceMode()));
-        controlPanel.setOnExport(c -> actionHandler.handleExport(c, getScene().getWindow(), logPanel, isMultiServiceMode()));
+        controlPanel.setOnExport(
+                c -> actionHandler.handleExport(c, getScene().getWindow(), logPanel, isMultiServiceMode()));
         controlPanel.setOnClearHistory(this::handleClearHistory);
         controlPanel.setOnDeleteClient(this::handleDeleteClient);
         controlPanel.setOnRenameClient(this::handleRenameClient);
@@ -159,17 +165,22 @@ public class EnhancedDashboardView extends BorderPane {
     }
 
     private void handleClearHistory(String clientId) {
-        if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
+        if (clientId == null) {
+            ReportDialogHelper.showAlert("Please select a client first!");
+            return;
+        }
 
         if ("ALL_CLIENTS".equals(clientId)) {
             logger.clearAll();
             activityTracker.clearAll();
             requestLogService.clearAll();
+            multiRequestLogService.clearAll();
             logPanel.append("History cleared for ALL clients\n");
         } else {
             logger.clearClient(clientId);
             activityTracker.clearClient(clientId);
             requestLogService.removeClient(clientId);
+            multiRequestLogService.removeClient(clientId);
             logPanel.append("History cleared for " + clientId + "\n");
         }
 
@@ -180,21 +191,30 @@ public class EnhancedDashboardView extends BorderPane {
     }
 
     private void handleDeleteClient(String clientId) {
-        if (clientId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
-        if ("ALL_CLIENTS".equals(clientId)) { ReportDialogHelper.showAlert("Cannot delete ALL_CLIENTS!"); return; }
+        if (clientId == null) {
+            ReportDialogHelper.showAlert("Please select a client first!");
+            return;
+        }
+        if ("ALL_CLIENTS".equals(clientId)) {
+            ReportDialogHelper.showAlert("Cannot delete ALL_CLIENTS!");
+            return;
+        }
 
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Delete Client");
         alert.setHeaderText("Are you sure?");
         String msg = clientRegistry.isDefaultClient(clientId)
-                ? clientId + " is a default client. The program resets to its initial state whenever it is restarted.\nDelete anyway?"
+                ? clientId
+                        + " is a default client. The program resets to its initial state whenever it is restarted.\nDelete anyway?"
                 : "Delete \"" + clientId + "\" and all its logs permanently?";
         alert.setContentText(msg);
         alert.showAndWait().ifPresent(btn -> {
-            if (btn != ButtonType.OK) return;
+            if (btn != ButtonType.OK)
+                return;
             logger.clearClient(clientId);
             activityTracker.clearClient(clientId);
             requestLogService.removeClient(clientId);
+            multiRequestLogService.removeClient(clientId);
             clientRegistry.removeClient(clientId);
             controlPanel.removeClientFromBox(clientId);
             activityTable.clear();
@@ -206,8 +226,14 @@ public class EnhancedDashboardView extends BorderPane {
     }
 
     private void handleRenameClient(String oldId) {
-        if (oldId == null) { ReportDialogHelper.showAlert("Please select a client first!"); return; }
-        if ("ALL_CLIENTS".equals(oldId)) { ReportDialogHelper.showAlert("Cannot rename ALL_CLIENTS!"); return; }
+        if (oldId == null) {
+            ReportDialogHelper.showAlert("Please select a client first!");
+            return;
+        }
+        if ("ALL_CLIENTS".equals(oldId)) {
+            ReportDialogHelper.showAlert("Cannot rename ALL_CLIENTS!");
+            return;
+        }
 
         javafx.scene.control.TextInputDialog dialog = new javafx.scene.control.TextInputDialog(oldId);
         dialog.setTitle("Rename Client");
@@ -215,9 +241,11 @@ public class EnhancedDashboardView extends BorderPane {
         dialog.setContentText("New name:");
         dialog.showAndWait().ifPresent(newId -> {
             newId = newId.trim();
-            if (newId.isEmpty() || newId.equals(oldId)) return;
+            if (newId.isEmpty() || newId.equals(oldId))
+                return;
 
             requestLogService.moveClientLogs(oldId, newId);
+            multiRequestLogService.moveClientLogs(oldId, newId);
             logger.clearClient(oldId);
             activityTracker.clearClient(oldId);
 
@@ -226,6 +254,19 @@ public class EnhancedDashboardView extends BorderPane {
                 if (entry.clientId.equals(newId)) {
                     ServiceRequest req = new ServiceRequest(newId, entry.getRequestType(), entry.timestamp);
                     logger.logRequest(req);
+                    activityTracker.trackRequest(req, entry.isBlocked());
+                }
+            }
+
+            List<CsvRequestLogEntry> multiEntries = multiRequestLogService.loadAll();
+            for (CsvRequestLogEntry entry : multiEntries) {
+                if (entry.clientId.equals(newId)) {
+                    ServiceRequest req = new ServiceRequest(
+                        newId,
+                        (entry.serviceId != null && !entry.serviceId.isEmpty()) ? entry.serviceId : null,
+                        entry.getRequestType(),
+                        entry.timestamp
+                    );
                     activityTracker.trackRequest(req, entry.isBlocked());
                 }
             }
@@ -258,7 +299,8 @@ public class EnhancedDashboardView extends BorderPane {
         List<CsvRequestLogEntry> entries = requestLogService.loadAll();
         int loaded = 0;
         for (CsvRequestLogEntry entry : entries) {
-            if (entry.clientId == null) continue;
+            if (entry.clientId == null)
+                continue;
             ServiceRequest req = new ServiceRequest(entry.clientId, entry.getRequestType(), entry.timestamp);
             logger.logRequest(req);
             activityTracker.trackRequest(req, entry.isBlocked());
@@ -274,19 +316,20 @@ public class EnhancedDashboardView extends BorderPane {
         List<CsvRequestLogEntry> multiEntries = multiRequestLogService.loadAll();
         int multiLoaded = 0;
         for (CsvRequestLogEntry entry : multiEntries) {
-            if (entry.clientId == null) continue;
+            if (entry.clientId == null)
+                continue;
             ServiceRequest req = new ServiceRequest(
-                entry.clientId,
-                (entry.serviceId != null && !entry.serviceId.isEmpty()) ? entry.serviceId : null,
-                entry.getRequestType(),
-                entry.timestamp
-            );
+                    entry.clientId,
+                    (entry.serviceId != null && !entry.serviceId.isEmpty()) ? entry.serviceId : null,
+                    entry.getRequestType(),
+                    entry.timestamp);
             activityTracker.trackRequest(req, entry.isBlocked());
             controlPanel.addClientIfAbsent(entry.clientId);
             multiLoaded++;
         }
         if (multiLoaded > 0) {
-            logPanel.append(String.format("Loaded %d multi-service records from data/multi_requests.csv\n", multiLoaded));
+            logPanel.append(
+                    String.format("Loaded %d multi-service records from data/multi_requests.csv\n", multiLoaded));
         }
 
         if (loaded > 0 || multiLoaded > 0) {
@@ -294,7 +337,6 @@ public class EnhancedDashboardView extends BorderPane {
             refreshClientViews();
         }
     }
-
 
     private void loadServicesIntoDropdown() {
         List<ApiService> services = serviceRegistry.getAll();
@@ -310,7 +352,8 @@ public class EnhancedDashboardView extends BorderPane {
 
     private void handleBarChart() {
         boolean multiServiceMode = isMultiServiceMode();
-        BarChartView barChartView = new BarChartView(activityTracker, controlPanel::getSelectedClient, multiServiceMode);
+        BarChartView barChartView = new BarChartView(activityTracker, controlPanel::getSelectedClient,
+                multiServiceMode);
 
         Stage chartStage = new Stage();
         chartStage.initModality(Modality.NONE);
@@ -322,15 +365,15 @@ public class EnhancedDashboardView extends BorderPane {
 
         Scene scene = new Scene(barChartView, 650, 380);
         scene.getStylesheets().add(
-            getClass().getResource("/styles/main.css").toExternalForm()
-        );
+                getClass().getResource("/styles/main.css").toExternalForm());
         chartStage.setScene(scene);
         chartStage.centerOnScreen();
         chartStage.show();
     }
 
     private void handleSettings() {
-        SettingsView settingsView = new SettingsView(currentMaxRequests, currentTimeWindow, currentBlockDuration, burstCount, burstDuration);
+        SettingsView settingsView = new SettingsView(currentMaxRequests, currentTimeWindow, currentBlockDuration,
+                burstCount, burstDuration);
 
         Stage settingsStage = new Stage();
         settingsStage.initModality(Modality.APPLICATION_MODAL);
@@ -340,8 +383,7 @@ public class EnhancedDashboardView extends BorderPane {
 
         Scene scene = new Scene(settingsView, 400, 380);
         scene.getStylesheets().add(
-            getClass().getResource("/styles/main.css").toExternalForm()
-        );
+                getClass().getResource("/styles/main.css").toExternalForm());
         settingsStage.setMinWidth(400);
         settingsStage.setMinHeight(380);
         settingsStage.setScene(scene);
@@ -376,6 +418,10 @@ public class EnhancedDashboardView extends BorderPane {
     }
 
     private List<String> getSelectedServiceIds() {
+        String specificService = controlPanel.getSelectedService();
+        if (specificService != null && !specificService.trim().isEmpty() && !"ALL_SERVICES".equals(specificService)) {
+            return List.of(specificService.trim());
+        }
         return serviceSelectorView.getSelectedServiceIds();
     }
 
@@ -407,7 +453,8 @@ public class EnhancedDashboardView extends BorderPane {
 
         List<String> clients = resolveClientsForRequest(clientId);
         for (String client : clients) {
-            logPanel.append(String.format("\n✉️ [%s] Sending %s request to %d service(s)...\n", client, type, selected.size()));
+            logPanel.append(
+                    String.format("\n✉️ [%s] Sending %s request to %d service(s)...\n", client, type, selected.size()));
 
             var results = multiSimulator.sendRequest(client, selected, type);
             int allowed = 0, blocked = 0;
@@ -424,7 +471,10 @@ public class EnhancedDashboardView extends BorderPane {
                         r.riskScore, r.reason);
                 logPanel.append(line);
 
-                if (r.isBlocked()) blocked++; else allowed++;
+                if (r.isBlocked())
+                    blocked++;
+                else
+                    allowed++;
             }
 
             logPanel.append(String.format("✅ [%s] Sent! Allowed: %d | Blocked: %d\n\n", client, allowed, blocked));
@@ -444,12 +494,14 @@ public class EnhancedDashboardView extends BorderPane {
             logPanel.append(String.format("\n⚡ [%s] Burst simulation: %d requests over %ds for %d service(s)...\n",
                     client, burstCount, burstDuration, selected.size()));
 
-            var results = multiSimulator.simulateBurst(client, selected, burstCount, java.time.Duration.ofSeconds(burstDuration));
+            var results = multiSimulator.simulateBurst(client, selected, burstCount,
+                    java.time.Duration.ofSeconds(burstDuration));
             int totalAllowed = 0, totalBlocked = 0;
 
             for (var entry : results.entrySet()) {
                 var r = entry.getValue();
-                logPanel.append(String.format("  %s -> %s - Allowed: %d | Blocked: %d\n", client, r.serviceId, r.allowed, r.blocked));
+                logPanel.append(String.format("  %s -> %s - Allowed: %d | Blocked: %d\n", client, r.serviceId,
+                        r.allowed, r.blocked));
                 totalAllowed += r.allowed;
                 totalBlocked += r.blocked;
             }
@@ -468,14 +520,14 @@ public class EnhancedDashboardView extends BorderPane {
         burstCount = settingsView.getBurstCount();
         burstDuration = settingsView.getBurstDuration();
 
-        enforcer = new RateLimitEnforcer(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow), java.time.Duration.ofSeconds(currentBlockDuration), logger);
+        enforcer = new RateLimitEnforcer(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow),
+                java.time.Duration.ofSeconds(currentBlockDuration), logger);
         analyzer = new RateLimitAnalyzer(List.of(
-            new FixedWindowPolicy(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow)),
-            new SlidingWindowPolicy(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow)),
-            new BurstDetectionPolicy(4, java.time.Duration.ofSeconds(3)),
-            new AbnormalPatternPolicy(3),
-            new RetryAbusePolicy(8, java.time.Duration.ofSeconds(2))
-        ));
+                new FixedWindowPolicy(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow)),
+                new SlidingWindowPolicy(currentMaxRequests, java.time.Duration.ofSeconds(currentTimeWindow)),
+                new BurstDetectionPolicy(4, java.time.Duration.ofSeconds(3)),
+                new AbnormalPatternPolicy(3),
+                new RetryAbusePolicy(8, java.time.Duration.ofSeconds(2))));
 
         actionHandler.updateEnforcer(enforcer);
         actionHandler.updateAnalyzer(analyzer);
@@ -484,12 +536,11 @@ public class EnhancedDashboardView extends BorderPane {
         settingsView.showSuccess("Settings saved successfully!");
         controlPanel.updateBurstLabel(burstCount, burstDuration);
         logPanel.append(String.format("Settings saved: Max=%d, Window=%ds, Block=%ds, Burst=%d/%ds\n",
-            currentMaxRequests, currentTimeWindow, currentBlockDuration, burstCount, burstDuration));
+                currentMaxRequests, currentTimeWindow, currentBlockDuration, burstCount, burstDuration));
         refreshClientViews();
 
         javafx.animation.Timeline closeTimer = new javafx.animation.Timeline(
-            new KeyFrame(Duration.seconds(1), e -> settingsStage.close())
-        );
+                new KeyFrame(Duration.seconds(1), e -> settingsStage.close()));
         closeTimer.play();
     }
 
@@ -511,53 +562,89 @@ public class EnhancedDashboardView extends BorderPane {
         if ("ALL_CLIENTS".equals(clientId)) {
             var allActivities = activityTracker.getAllActivities();
             if (allActivities.isEmpty()) {
-                controlPanel.resetQuota();
-                statsPanel.resetStats();
-                controlPanel.updateRiskLevel(ViolationLevel.NORMAL);
                 activityTable.clear();
-                return;
-            }
-            List<ClientActivityTracker.ActivityRecord> allRecords = new java.util.ArrayList<>();
-            int totalReqs = 0, totalAllowed = 0, totalBlocked = 0;
-            int totalQuota = 0, totalMax = 0;
-            for (var activity : allActivities.values()) {
-                allRecords.addAll(activity.getRecords());
-                totalReqs += activity.getTotalRequests();
-                totalAllowed += activity.getAllowedRequests();
-                totalBlocked += activity.getBlockedRequests();
-                totalQuota += enforcer.getRemainingQuota(activity.getClientId());
-                totalMax += enforcer.getMaxRequests();
-            }
-            activityTable.setAllRecords(allRecords);
-            applyFilters();
-            statsPanel.updateStats(totalReqs, totalAllowed, totalBlocked);
-            controlPanel.updateQuota(totalQuota, totalMax);
-
-            ViolationLevel worstLevel = ViolationLevel.NORMAL;
-            for (var activity : allActivities.values()) {
-                RequestLog log = logger.getLog(activity.getClientId());
-                if (log != null && !log.getRequests().isEmpty()) {
-                    ViolationLevel level = analyzer.analyze(log).getLevel();
-                    if (level.isMoreSevereThan(worstLevel)) {
-                        worstLevel = level;
-                    }
-                }
-            }
-            controlPanel.updateRiskLevel(worstLevel);
-
-            long maxBlockRemaining = 0;
-            for (var activity : allActivities.values()) {
-                if (enforcer.getRemainingQuota(activity.getClientId()) == 0) {
-                    long blockTime = enforcer.getTimeUntilReset(activity.getClientId()).getSeconds();
-                    if (blockTime > maxBlockRemaining) {
-                        maxBlockRemaining = blockTime;
-                    }
-                }
-            }
-            if (maxBlockRemaining > 0) {
-                controlPanel.updateBlockCountdown(maxBlockRemaining);
+                statsPanel.resetStats();
             } else {
-                controlPanel.clearBlockCountdown();
+                List<ClientActivityTracker.ActivityRecord> allRecords = new java.util.ArrayList<>();
+                int totalReqs = 0, totalAllowed = 0, totalBlocked = 0;
+                for (var activity : allActivities.values()) {
+                    allRecords.addAll(activity.getRecords());
+                    totalReqs += activity.getTotalRequests();
+                    totalAllowed += activity.getAllowedRequests();
+                    totalBlocked += activity.getBlockedRequests();
+                }
+                activityTable.setAllRecords(allRecords);
+                applyFilters();
+                statsPanel.updateStats(totalReqs, totalAllowed, totalBlocked);
+            }
+
+            if (isMultiServiceMode()) {
+                List<String> selectedServices = getSelectedServiceIds();
+                if (!selectedServices.isEmpty()) {
+                    int svcQuota = 0;
+                    for (String svc : selectedServices) {
+                        svcQuota += multiSimulator.getRemainingQuota(svc);
+                    }
+                    controlPanel.updateQuota(svcQuota, selectedServices.size() * enforcer.getMaxRequests());
+                } else {
+                    controlPanel.updateQuota(0, 0);
+                }
+            } else {
+                int totalQuota = 0, totalMax = 0;
+                List<String> clients = clientRegistry.loadAll();
+                if (!clients.isEmpty()) {
+                    for (String cid : clients) {
+                        totalQuota += enforcer.getRemainingQuota(cid);
+                        totalMax += enforcer.getMaxRequests();
+                    }
+                    controlPanel.updateQuota(totalQuota, totalMax);
+                } else {
+                    controlPanel.updateQuota(0, 0);
+                }
+            }
+
+            if (isMultiServiceMode()) {
+                List<String> selectedServices = getSelectedServiceIds();
+                long maxBlockRemaining = 0;
+                for (String svc : selectedServices) {
+                    if (multiSimulator.getRemainingQuota(svc) == 0) {
+                        long blockTime = enforcer.getTimeUntilReset("svc_" + svc).getSeconds();
+                        if (blockTime > maxBlockRemaining) {
+                            maxBlockRemaining = blockTime;
+                        }
+                    }
+                }
+                if (maxBlockRemaining > 0) {
+                    controlPanel.updateBlockCountdown(maxBlockRemaining);
+                } else {
+                    controlPanel.clearBlockCountdown();
+                }
+                controlPanel.updateRiskLevel(ViolationLevel.NORMAL);
+            } else {
+                ViolationLevel worstLevel = ViolationLevel.NORMAL;
+                long maxBlockRemaining = 0;
+                List<String> clients = clientRegistry.loadAll();
+                for (String cid : clients) {
+                    RequestLog log = logger.getLog(cid);
+                    if (log != null && !log.getRequests().isEmpty()) {
+                        ViolationLevel level = analyzer.analyze(log).getLevel();
+                        if (level.isMoreSevereThan(worstLevel)) {
+                            worstLevel = level;
+                        }
+                    }
+                    if (enforcer.getRemainingQuota(cid) == 0) {
+                        long blockTime = enforcer.getTimeUntilReset(cid).getSeconds();
+                        if (blockTime > maxBlockRemaining) {
+                            maxBlockRemaining = blockTime;
+                        }
+                    }
+                }
+                controlPanel.updateRiskLevel(worstLevel);
+                if (maxBlockRemaining > 0) {
+                    controlPanel.updateBlockCountdown(maxBlockRemaining);
+                } else {
+                    controlPanel.clearBlockCountdown();
+                }
             }
 
             trafficChart.updateData();
@@ -576,7 +663,8 @@ public class EnhancedDashboardView extends BorderPane {
         }
 
         RequestLog log = logger.getLog(clientId);
-        ViolationLevel level = (log != null && !log.getRequests().isEmpty()) ? analyzer.analyze(log).getLevel() : ViolationLevel.NORMAL;
+        ViolationLevel level = (log != null && !log.getRequests().isEmpty()) ? analyzer.analyze(log).getLevel()
+                : ViolationLevel.NORMAL;
         controlPanel.updateRiskLevel(level);
 
         var activity = activityTracker.getActivity(clientId);

@@ -71,7 +71,7 @@ public class DashboardActionHandler {
         }
 
         if ("ALL_CLIENTS".equals(clientId)) {
-            for (String cid : new String[]{"MobileApp", "WebApp", "PartnerAPI", "SuspiciousBot"}) {
+            for (String cid : clientRegistry.loadAll()) {
                 ServiceRequest req = new ServiceRequest(cid, type, LocalDateTime.now());
                 RateLimitEnforcer.RequestResult result = enforcer.processRequest(req);
                 activityTracker.trackRequest(req, result.isBlocked());
@@ -83,7 +83,7 @@ public class DashboardActionHandler {
                 String reason = abuse.hasViolations() ? abuse.getSummary() : (result.isBlocked() ? "RATE_LIMIT_EXCEEDED" : "OK");
 
                 persistToCsv(req, result, eventType, riskScore, reason);
-                logPanel.appendEvent(eventType, cid, reason);
+                logPanel.appendEvent(eventType, cid, reason + " | Quota: " + result.getRemainingQuota() + "/" + enforcer.getMaxRequests());
             }
             onUpdated.run();
             return;
@@ -109,8 +109,9 @@ public class DashboardActionHandler {
 
         if ("ALL_CLIENTS".equals(clientId)) {
             int totalAllowed = 0, totalBlocked = 0;
+            List<String> clients = clientRegistry.loadAll();
             logPanel.append(String.format("\n⚡ Burst simulation for ALL clients (%d req each, %ds)...\n", burstCount, burstDuration));
-            for (String cid : new String[]{"MobileApp", "WebApp", "PartnerAPI", "SuspiciousBot"}) {
+            for (String cid : clients) {
                 List<ServiceRequest> burst = burstGenerator.generateBurst(cid, burstCount, Duration.ofSeconds(burstDuration));
                 int allowed = 0, blocked = 0;
                 for (ServiceRequest req : burst) {
@@ -128,10 +129,11 @@ public class DashboardActionHandler {
                 }
                 totalAllowed += allowed;
                 totalBlocked += blocked;
-                logPanel.append(String.format("  %s - Allowed: %d | Blocked: %d\n", cid, allowed, blocked));
+                logPanel.append(String.format("  %s - Allowed: %d | Blocked: %d | Quota: %d/%d\n",
+                        cid, allowed, blocked, enforcer.getRemainingQuota(cid), enforcer.getMaxRequests()));
             }
             onUpdated.run();
-            logPanel.append(String.format("⚡ Burst Done! Total: %d | Allowed: %d | Blocked: %d\n\n", burstCount * 4, totalAllowed, totalBlocked));
+            logPanel.append(String.format("⚡ Burst Done! Total: %d | Allowed: %d | Blocked: %d\n\n", burstCount * clients.size(), totalAllowed, totalBlocked));
             return;
         }
 

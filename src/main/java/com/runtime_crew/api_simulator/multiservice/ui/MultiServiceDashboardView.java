@@ -6,6 +6,8 @@ import com.runtime_crew.api_simulator.multiservice.service.ServiceRegistry;
 import com.runtime_crew.api_simulator.policy.*;
 import com.runtime_crew.api_simulator.service.*;
 import com.runtime_crew.api_simulator.ui.dashboard.LogPanel;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -32,6 +34,7 @@ public class MultiServiceDashboardView extends BorderPane {
     private final MultiServiceBarChartView barChartView;
     private final Button manageBtn;
     private ComboBox<String> typeBox;
+    private final Timeline refreshTimer;
 
     public MultiServiceDashboardView() {
         enforcer = new RateLimitEnforcer(10, Duration.ofSeconds(10), Duration.ofSeconds(3), logger);
@@ -47,6 +50,10 @@ public class MultiServiceDashboardView extends BorderPane {
         selectorView = new ServiceSelectorView(serviceRegistry);
         barChartView = new MultiServiceBarChartView(activityTracker);
         manageBtn = createButton("\u2699\uFE0F Manage Services", "#6366f1");
+
+        refreshTimer = new Timeline(new KeyFrame(javafx.util.Duration.seconds(1), e -> refreshStats()));
+        refreshTimer.setCycleCount(Timeline.INDEFINITE);
+        refreshTimer.play();
 
         initLayout();
         setupEvents();

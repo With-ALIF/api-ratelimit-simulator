@@ -43,7 +43,7 @@ public class ActivityTableView extends VBox {
             }
             return new SimpleStringProperty("-");
         });
-        col.setPrefWidth(150);
+        col.setPrefWidth(250);
         col.setCellFactory(column -> new TableCell<>() {
             @Override
             protected void updateItem(String item, boolean empty) {
@@ -82,7 +82,7 @@ public class ActivityTableView extends VBox {
 
         TableColumn<ActivityRecord, String> timeCol = new TableColumn<>("Time");
         timeCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getFormattedTime()));
-        timeCol.setPrefWidth(90);
+        timeCol.setPrefWidth(80);
 
         TableColumn<ActivityRecord, String> clientCol = new TableColumn<>("Client");
         clientCol.setCellValueFactory(data -> {
@@ -92,11 +92,11 @@ public class ActivityTableView extends VBox {
             }
             return new SimpleStringProperty(clientId != null ? clientId : "-");
         });
-        clientCol.setPrefWidth(110);
+        clientCol.setPrefWidth(100);
 
         TableColumn<ActivityRecord, RequestType> typeCol = new TableColumn<>("Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("requestType"));
-        typeCol.setPrefWidth(100);
+        typeCol.setPrefWidth(80);
 
         TableColumn<ActivityRecord, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getStatus()));

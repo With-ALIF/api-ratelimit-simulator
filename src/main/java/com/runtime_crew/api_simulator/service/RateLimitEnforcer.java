@@ -98,20 +98,24 @@ public class RateLimitEnforcer {
             })
             .count();
 
+        if (recentCount == 0 && !requests.isEmpty() && Duration.between(latest, now).compareTo(timeWindow) > 0) {
+            requestLogger.clearClient(clientId);
+        }
+
         return Math.max(0, maxRequests - (int) recentCount);
     }
 
     public Duration getTimeUntilReset(String clientId) {
-        RequestLog log = requestLogger.getLog(clientId);
-        if (log == null || log.getRequests().isEmpty()) {
-            return Duration.ZERO;
-        }
-
         LocalDateTime blockStart = blockStartTimes.get(clientId);
         if (blockStart != null) {
             Duration elapsed = Duration.between(blockStart, LocalDateTime.now());
             Duration remaining = blockDuration.minus(elapsed);
             if (!remaining.isNegative()) return remaining;
+        }
+
+        RequestLog log = requestLogger.getLog(clientId);
+        if (log == null || log.getRequests().isEmpty()) {
+            return Duration.ZERO;
         }
 
         LocalDateTime now = LocalDateTime.now();

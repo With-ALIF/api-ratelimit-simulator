@@ -500,13 +500,14 @@ sb.append("\n");
 
         sb.append("SUMMARY\n");
         sb.append(sepSingle).append("\n");
-        sb.append(String.format(" %-23s          : %5d\n", "Total Clients", allActivities.size()));
-        sb.append(String.format(" %-23s       : %5d\n", "Total Requests", grandTotal));
-        sb.append(String.format(" %-23s        : %5d\n", "Total Allowed", grandAllowed));
-        sb.append(String.format(" %-23s        :  %5d\n", "Total Blocked", grandBlocked));
-        sb.append(String.format(" %-23s    : %5.1f%%\n", "Overall Success Rate", grandRate));
-        sb.append(String.format(" %-23s     : %5.1f%%\n", "Overall Block Rate", grandBlockRate));
-        sb.append(String.format(" %-23s: %5d\n", "Average Requests/Client", avgPerClient));
+        String summaryFmt = " %-25s: %8s\n";
+        sb.append(String.format(summaryFmt, "Total Clients", allActivities.size()));
+        sb.append(String.format(summaryFmt, "Total Requests", grandTotal));
+        sb.append(String.format(summaryFmt, "Total Allowed", grandAllowed));
+        sb.append(String.format(summaryFmt, "Total Blocked", grandBlocked));
+        sb.append(String.format(summaryFmt, "Overall Success Rate", String.format("%.1f%%", grandRate)));
+        sb.append(String.format(summaryFmt, "Overall Block Rate", String.format("%.1f%%", grandBlockRate)));
+        sb.append(String.format(summaryFmt, "Average Requests/Client", avgPerClient));
         sb.append(sepSingle).append("\n\n");
 
         sb.append("                         END OF REPORT\n");
