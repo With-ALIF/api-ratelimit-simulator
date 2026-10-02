@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assignment Answer — API Rate-Limit &amp; Abuse Simulator</title>
+<style>
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#fff;color:#111;font-family:'Segoe UI',system-ui,-apple-system,Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.75;font-size:15.5px}
+.wrap{max-width:960px;margin:0 auto;padding:0 22px}
+header.hero{padding:46px 0 30px;border-bottom:2px solid #111;background:linear-gradient(180deg,#eef4fb 0%,#ffffff 85%)}
+.eyebrow{display:inline-block;font-size:11.5px;letter-spacing:2.2px;color:#0b6bcb;border:1px solid #0b6bcb;border-radius:999px;padding:5px 13px;font-weight:700}
+h1{font-family:Georgia,'Times New Roman',serif;font-size:clamp(26px,4.2vw,40px);letter-spacing:-.3px;margin:16px 0 8px;font-weight:700}
+.sub{color:#444;max-width:780px}
+.navlinks{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.navlinks a{color:#111;text-decoration:none;border:1px solid #111;border-radius:9px;padding:8px 16px;font-size:14px;font-weight:600}
+.navlinks a:hover{background:#111;color:#fff}
+nav.toc{padding:24px 0;border-bottom:1px solid #ddd}
+.tocgrid{display:flex;flex-wrap:wrap;gap:9px}
+.tocgrid a{flex:1 1 230px;display:flex;align-items:center;justify-content:flex-start;text-align:left;color:#111;text-decoration:none;border:1px solid #ddd;border-radius:9px;padding:7px 12px;font-size:13.5px;background:#f7f9fb}
+.tocgrid a:hover{border-color:#0b6bcb}
+.tocgrid i{font-style:normal;font-family:Consolas,monospace;font-size:11.5px;color:#0b6bcb;border:1px solid #0b6bcb;border-radius:6px;padding:1px 7px;margin-right:7px}
+section{padding:36px 0;border-bottom:1px solid #ddd}
+section p{text-align:justify}
+.sec-head{display:flex;gap:13px;align-items:baseline;margin-bottom:14px}
+.sec-num{font-family:Consolas,monospace;font-size:12px;color:#0b6bcb;border:1px solid #0b6bcb;border-radius:7px;padding:2px 9px;white-space:nowrap}
+.sec-head h2{font-family:Georgia,'Times New Roman',serif;font-size:23px;margin:0;letter-spacing:0}
+.diagram{background:#f7f9fb;border:1px solid #ddd;border-radius:13px;padding:20px;overflow-x:auto;margin:16px 0}
+.diagram svg{display:block;min-width:720px;width:100%;height:auto}
+.tbl-wrap{overflow-x:auto;border:1px solid #ddd;border-radius:12px;margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th{background:#111;color:#fff;text-align:left;padding:10px 14px;font-size:12px;letter-spacing:.6px}
+td{border-top:1px solid #ddd;padding:10px 14px;vertical-align:top}
+tr:nth-child(even) td{background:#f7f9fb}
+td.k{font-family:Consolas,monospace;font-size:13px;white-space:nowrap}
+#trace th:last-child,#trace td:last-child{min-width:280px}
+#oop th:last-child,#oop td:last-child{min-width:380px}
+.pill{display:inline-block;border-radius:6px;padding:2px 10px;font-size:12.5px;font-weight:700;border:1px solid}
+.p-ok{color:#0a7a3d;border-color:#0a7a3d;background:#e9f7ef}
+.p-warn{color:#9a6a00;border-color:#c79a00;background:#fdf6e3}
+.p-bad{color:#b00020;border-color:#b00020;background:#fdeef0}
+.cap{font-size:13px;color:#555;font-style:italic;text-align:center;margin-top:10px}
+.note{background:#eef6fd;border:1px solid #0b6bcb;border-radius:11px;padding:12px 18px;margin:16px 0;font-size:14.5px}
+code{background:#f0f3f6;border:1px solid #ddd;padding:1px 6px;border-radius:5px;font-size:.86em;color:#0b5394}
+ul.tight li{margin:6px 0}
+footer{padding:34px 0 50px;text-align:center}
+@media(max-width:760px){body{font-size:14.5px}.wrap{padding:0 16px}section{padding:28px 0}.diagram{padding:12px 10px}th,td{padding:8px 10px}}
+@media print{nav.toc,.navlinks{display:none}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+<div class="eyebrow">RUNTIME CREW &middot; GROUP 02 &middot; ASSIGNMENT ANSWER</div>
+<h1>API Rate-Limit &amp; Abuse Simulator — Answer Sheet</h1>
+<p class="sub">Objective, UML class diagram, worked fixed-vs-sliding trace, sample report, OOP mapping and conclusion — written against the full project codebase.</p>
+<div class="navlinks">
+<a href="../index.html">&larr; Main page</a>
+</div>
+</div></header>
+
+<nav class="toc"><div class="wrap"><div class="tocgrid">
+<a href="#objective"><i>1</i>Objective &amp; problem statement</a>
+<a href="#uml"><i>2</i>Class diagram (UML)</a>
+<a href="#trace"><i>3</i>Worked trace: fixed vs. sliding</a>
+<a href="#sample"><i>4</i>Sample output / report</a>
+<a href="#oop"><i>5</i>OOP concept mapping</a>
+<a href="#conclusion"><i>6</i>Conclusion</a>
+</div></div></nav>
+
+<section id="objective"><div class="wrap">
+<div class="sec-head"><span class="sec-num">1</span><h2>Objective and problem statement</h2></div>
+<p>Public APIs must survive overload, scraping and aggressive retries without blocking legitimate users. This project simulates an API gateway that <b>(a)</b> admits at most N requests per time window per client, <b>(b)</b> judges behaviour with five detection policies (fixed window, sliding window, burst, abnormal pattern, retry abuse), and <b>(c)</b> turns every verdict into a severity level, a risk score and an exportable report. Everything runs in memory as plain Java objects — no network, no server — so each decision is deterministic and inspectable.</p>
+</div></section>
+
+<section id="uml"><div class="wrap">
+<div class="sec-head"><span class="sec-num">2</span><h2>Class diagram (UML)</h2></div>
+<p>The figure below captures the domain backbone of the simulator in one view: who owns whom, and who implements what. Read the diamonds for lifetime, and the dashed triangles for pluggability.</p>
+<div class="diagram">
+<svg viewBox="0 0 920 600" xmlns="http://www.w3.org/2000/svg" font-family="Consolas,monospace">
+<rect x="1" y="1" width="918" height="598" fill="none" stroke="#fff"/>
+<!-- RatePolicy interface -->
+<rect x="360" y="24" width="200" height="118" fill="#fff" stroke="#111" stroke-width="1.6"/>
+<text x="460" y="46" text-anchor="middle" font-size="11" fill="#555">&laquo;interface&raquo;</text>
+<text x="460" y="64" text-anchor="middle" font-size="13" font-weight="bold" fill="#111">RatePolicy</text>
+<line x1="360" y1="74" x2="560" y2="74" stroke="#111"/>
+<text x="370" y="94" font-size="11" fill="#111">+ evaluate(log, report)</text>
+<text x="370" y="112" font-size="11" fill="#111">+ getName()</text>
+<text x="370" y="130" font-size="11" fill="#111">+ getDescription()</text>
+<!-- FixedWindowPolicy -->
+<rect x="60" y="200" width="220" height="150" fill="#fff" stroke="#111" stroke-width="1.6"/>
+<text x="170" y="222" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#111">FixedWindowPolicy</text>
+<line x1="60" y1="232" x2="280" y2="232" stroke="#111"/>
+<text x="70" y="252" font-size="11" fill="#111">- maxRequests: int</text>
+<text x="70" y="270" font-size="11" fill="#111">- window: Duration</text>
+<line x1="60" y1="280" x2="280" y2="280" stroke="#111"/>
+<text x="70" y="300" font-size="11" fill="#111">+ evaluate(log, report)</text>
+<text x="70" y="318" font-size="11" fill="#111">+ getMaxRequests()</text>
+<text x="70" y="336" font-size="11" fill="#111">+ getWindow()</text>
+<!-- SlidingWindowPolicy -->
+<rect x="640" y="200" width="220" height="150" fill="#fff" stroke="#111" stroke-width="1.6"/>
+<text x="750" y="222" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#111">SlidingWindowPolicy</text>
+<line x1="640" y1="232" x2="860" y2="232" stroke="#111"/>
+<text x="650" y="252" font-size="11" fill="#111">- maxRequests: int</text>
+<text x="650" y="270" font-size="11" fill="#111">- window: Duration</text>
+<line x1="640" y1="280" x2="860" y2="280" stroke="#111"/>
+<text x="650" y="300" font-size="11" fill="#111">+ evaluate(log, report)</text>
+<text x="650" y="318" font-size="11" fill="#111">+ getMaxRequests()</text>
+<text x="650" y="336" font-size="11" fill="#111">+ getWindow()</text>
+<!-- realization: dashed + hollow triangle -->
+<line x1="170" y1="200" x2="400" y2="146" stroke="#111" stroke-dasharray="7,5"/>
+<polygon points="400,132 391,147 409,147" fill="#fff" stroke="#111" stroke-width="1.6"/>
+<line x1="750" y1="200" x2="520" y2="146" stroke="#111" stroke-dasharray="7,5"/>
+<polygon points="520,132 511,147 529,147" fill="#fff" stroke="#111" stroke-width="1.6"/>
+<text x="240" y="168" font-size="11" font-style="italic" fill="#555">realization</text>
+<text x="640" y="168" font-size="11" font-style="italic" fill="#555">realization</text>
+<!-- Client -->
+<rect x="60" y="410" width="220" height="132" fill="#fff" stroke="#111" stroke-width="1.6"/>
+<text x="170" y="432" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#111">Client</text>
+<line x1="60" y1="442" x2="280" y2="442" stroke="#111"/>
+<text x="70" y="462" font-size="11" fill="#111">- clientId: String</text>
+<text x="70" y="480" font-size="11" fill="#111">- name: String</text>
+<line x1="60" y1="490" x2="280" y2="490" stroke="#111"/>
+<text x="70" y="510" font-size="11" fill="#111">+ getClientId()</text>
+<text x="70" y="528" font-size="11" fill="#111">+ equals()/hashCode()</text>
+<!-- RequestLog -->
+<rect x="350" y="410" width="220" height="132" fill="#fff" stroke="#111" stroke-width="1.6"/>
+<text x="460" y="432" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#111">RequestLog</text>
+<line x1="350" y1="442" x2="570" y2="442" stroke="#111"/>
+<text x="360" y="462" font-size="11" fill="#111">- clientId: String</text>
+<text x="360" y="480" font-size="11" fill="#111">- requests: List</text>
+<line x1="350" y1="490" x2="570" y2="490" stroke="#111"/>
+<text x="360" y="510" font-size="11" fill="#111">+ addRequest()</text>
+<text x="360" y="528" font-size="11" fill="#111">+ getRequests()</text>
+<!-- ServiceRequest -->
+<rect x="640" y="410" width="220" height="132" fill="#fff" stroke="#111" stroke-width="1.6"/>
+<text x="750" y="432" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#111">ServiceRequest</text>
+<line x1="640" y1="442" x2="860" y2="442" stroke="#111"/>
+<text x="650" y="462" font-size="11" fill="#111">- clientId: String</text>
+<text x="650" y="480" font-size="11" fill="#111">- requestType: enum</text>
+<text x="650" y="498" font-size="11" fill="#111">- timestamp: DateTime</text>
+<line x1="640" y1="506" x2="860" y2="506" stroke="#111"/>
+<text x="650" y="526" font-size="11" fill="#111">+ getTimestamp()</text>
+<!-- composition: Client <>-- RequestLog -->
+<line x1="292" y1="476" x2="350" y2="476" stroke="#111" stroke-width="1.6"/>
+<polygon points="280,476 290,469 300,476 290,483" fill="#111"/>
+<text x="292" y="466" font-size="11" fill="#111">1</text>
+<text x="322" y="466" font-size="11" fill="#111">0..*</text>
+<text x="288" y="500" font-size="11" font-style="italic" fill="#555">owns</text>
+<!-- association: RequestLog -- ServiceRequest -->
+<line x1="570" y1="476" x2="640" y2="476" stroke="#111" stroke-width="1.6"/>
+<text x="574" y="466" font-size="11" fill="#111">1</text>
+<text x="612" y="466" font-size="11" fill="#111">0..*</text>
+<text x="578" y="500" font-size="11" font-style="italic" fill="#555">records</text>
+<text x="60" y="570" font-size="11.5" fill="#333">◆ = composition (filled diamond on the owner's side — log entries live and die with the client)</text>
+<text x="60" y="588" font-size="11.5" fill="#333">▷ = realization (dashed + hollow triangle — policies implement RatePolicy)</text>
+</svg>
+</div>
+<div class="cap">Fig 2.1 — Domain classes with composition (Client ◆ RequestLog) and realization (policies ▷ RatePolicy). Multiplicities: one client owns 0..* logs; one log records 0..* requests.</div>
+<div class="note"><b>UML concept behind Figure 2.1.</b> The diagram shows <b>composition</b> — a Client has a list of RequestLog entries (filled diamond on the owner's side, lifetime bound to the owner) — and <b>realization</b> — both policies implement the RatePolicy interface (dashed line with a hollow triangle pointing at the interface). In other words: filled diamond = composition (the Client owns its RequestLog list; logs die with the client); dashed line + hollow triangle = realization (both policies implement RatePolicy, so the analyzer can swap them at runtime without touching its loop). In the implementation, Client is <code>model/Client.java</code>, RequestLog is <code>model/RequestLog.java</code>, and RatePolicy is <code>policy/RatePolicy.java</code> with <code>policy/FixedWindowPolicy.java</code> and <code>policy/SlidingWindowPolicy.java</code> as the two realizations. Records are immutable value objects, so the live log list does not sit inside the client record — it sits one level up, in <code>service/RequestLogger</code>'s <code>Map&lt;clientId, RequestLog&gt;</code> (persisted through <code>service/RequestLogService</code>) — a single gatekeeper still owns the log.</div>
+</div></section>
+
+<section id="trace"><div class="wrap">
+<div class="sec-head"><span class="sec-num">3</span><h2>Worked trace: fixed vs. sliding window</h2></div>
+<p><b>Policy: 5 requests per 10 seconds.</b> <code>CLIENT_A</code> sends at <code>10:15:36, :37, :38, :39, :39</code> | <code>:40, :40, :41, :42, :43</code> — five requests before the <code>:40</code> edge, five on and after it.</p>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Policy</th><th>Window(s) examined</th><th>Max count</th><th>Result</th></tr></thead>
+<tbody>
+<tr><td class="k">Fixed Window</td><td class="k">10:15:30 – 10:15:39</td><td class="k">5</td><td><span class="pill p-ok">ALLOWED</span> — 5 ≤ 5, counter resets at :40</td></tr>
+<tr><td class="k">Fixed Window</td><td class="k">10:15:40 – 10:15:49</td><td class="k">5</td><td><span class="pill p-ok">ALLOWED</span> — 5 ≤ 5, all ten admitted, limit evaded</td></tr>
+<tr><td class="k">Sliding Window</td><td class="k">10:15:36 – 10:15:45 (rolling)</td><td class="k">6</td><td><span class="pill p-bad">BLOCKED — CRITICAL</span> — the 6th request (10:15:40) already sees six in-window requests</td></tr>
+</tbody>
+</table></div>
+<p>The fixed window has a boundary-burst weakness. A client can send 2× the limit across a window edge. The sliding window closes this gap, but it costs more: O(n) memory to keep timestamps, compared with O(1) counters per window. This is the trade-off real API gateways weigh, and it is why production systems use approximations such as the sliding-window counter or the token bucket.</p>
+<div class="note"><b>Reading the trace:</b> each fixed window honestly reports “5”, yet the client sustained ten requests in ten seconds — double the quota. The sliding check never resets, so the sixth arrival trips the detector. Cheap metering versus strict protection is exactly the design choice <code>FixedWindowPolicy</code> vs <code>SlidingWindowPolicy</code> encode in code.</div>
+</div></section>
+
+<section id="sample"><div class="wrap">
+<div class="sec-head"><span class="sec-num">4</span><h2>Sample output / report</h2></div>
+<p>What the simulator prints for the trace above (plus one quiet client for contrast):</p>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Client</th><th>Policy</th><th>Max count</th><th>Limit</th><th>Level</th></tr></thead>
+<tbody>
+<tr><td class="k">CLIENT_A</td><td class="k">Fixed Window (:30–:39)</td><td class="k">5</td><td class="k">5</td><td><span class="pill p-ok">NORMAL</span></td></tr>
+<tr><td class="k">CLIENT_A</td><td class="k">Fixed Window (:40–:49)</td><td class="k">5</td><td class="k">5</td><td><span class="pill p-ok">NORMAL</span> — boundary exploit, 10 admitted</td></tr>
+<tr><td class="k">CLIENT_A</td><td class="k">Sliding Window (rolling)</td><td class="k">6</td><td class="k">5</td><td><span class="pill p-bad">CRITICAL</span> — “Sliding window abuse detected: 6 requests within 10s window (limit: 5)”</td></tr>
+<tr><td class="k">CLIENT_B</td><td class="k">Fixed Window</td><td class="k">2</td><td class="k">5</td><td><span class="pill p-ok">NORMAL</span></td></tr>
+<tr><td class="k">CLIENT_B</td><td class="k">Burst Detection</td><td class="k">4</td><td class="k">4</td><td><span class="pill p-warn">WARNING</span> — “Burst detected: 4 requests within 3 seconds”</td></tr>
+</tbody>
+</table></div>
+<div class="cap">Table 4.1 — Per-policy verdicts: observed max count against the limit, and the severity each verdict carries into the risk score.</div>
+<div class="note"><b>Reading Table 4.1.</b> CLIENT_A under the fixed window remains exactly at the limit, so no violation fires; under the sliding window the same traffic reaches double the limit (10/5 = 2.0×), hence CRITICAL — the same traffic judged by <code>policy/SlidingWindowPolicy</code>, which escalates the moment any rolling window exceeds the max. CLIENT_B approaches the limit under neither counting method. Where the table shows NORMAL (“no violation fired”), the live dashboard shows the same state on its risk badge (<code>ControlPanelView.updateRiskLevel()</code>) and the report prints “No violations” (<code>AbuseReport.getSummary()</code>).</div>
+</div></section>
+
+<section id="oop"><div class="wrap">
+<div class="sec-head"><span class="sec-num">5</span><h2>OOP concept mapping and conclusion</h2></div>
+<div class="tbl-wrap"><table>
+<thead><tr><th>Concept</th><th>Where in this codebase</th><th>How it is used</th></tr></thead>
+<tbody>
+<tr><td class="k">Encapsulation</td><td class="k">AbuseReport, RateLimitEnforcer, ClientActivityTracker</td><td>Counters, block tables and violation lists are <code>private</code>; state changes only through <code>addViolation()</code>, <code>setLevel()</code>, <code>processRequest()</code>; histories are exposed as unmodifiable views.</td></tr>
+<tr><td class="k">Polymorphism</td><td class="k">RateLimitAnalyzer.analyze()</td><td>One <code>List&lt;RatePolicy&gt;</code> holds five detectors; the same <code>evaluate()</code> call dispatches to five different algorithms at runtime.</td></tr>
+<tr><td class="k">Strategy pattern</td><td class="k">RatePolicy + 5 policies</td><td>Detection algorithms are interchangeable behind one interface; the composition root wires them, so swapping a strategy is a one-line change.</td></tr>
+<tr><td class="k">Enums</td><td class="k">RequestType, ViolationLevel, EventType</td><td>Fixed vocabularies (operations, severities, outcomes) with display names; enum ordinals drive the severity ladder.</td></tr>
+<tr><td class="k">Java Time API</td><td class="k">ServiceRequest, enforcer, all policies</td><td><code>LocalDateTime</code> stamps plus <code>Duration.between</code> do all window maths — no external clock library, no string parsing.</td></tr>
+</tbody>
+</table></div>
+<p>Together these keep detection logic behind one interface, state tamper-proof, and time maths exact — which is why new policies, clients and report formats slot in without touching existing code.</p>
+</div></section>
+
+<section id="conclusion"><div class="wrap">
+<div class="sec-head"><span class="sec-num">6</span><h2>Conclusion</h2></div>
+<p>Correct rate limiting needs both admission control and behavioural detection: quotas stop floods while pattern policies catch bots that respect quotas. Fixed windows are cheap but exploitable at the boundary; sliding windows cost more and close the gap. Because everything here runs deterministically in memory, every verdict is reproducible, explainable and reportable.</p>
+</div></section>
+
+<footer><div class="wrap" style="text-align:center">
+<div style="font-size:17px;font-weight:700;margin:0 0 8px">Smart API Rate-Limit &amp; Abuse Simulator</div>
+<div style="margin:0 0 6px;color:#555">Java 21 &amp; JavaFX</div>
+<div style="margin:0;color:#0b6bcb;font-weight:700;letter-spacing:1.5px">Run Time Crew</div>
+</div></footer>
+</body>
+</html>

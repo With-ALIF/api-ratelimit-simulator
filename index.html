@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Smart API Rate-Limit &amp; Abuse Simulator â€” Full Project Documentation</title>
+<title>Smart API Rate-Limit &amp; Abuse Simulator — Full Project Documentation</title>
 <meta name="description" content="Complete overview, architecture graph, workflow, module tree and A-Z class index of the Smart API Rate-Limit & Abuse Simulator by Runtime Crew (BRUR)." />
 <style>
 :root{
@@ -257,6 +257,7 @@ body{overflow-x:clip}
   td{padding:9px 11px}
   td.k{white-space:normal;word-break:break-word}
   #tbody td:last-child{min-width:240px}
+  #tbody td:nth-child(2){white-space:nowrap}
   .tbl-wrap,.diagram{
     background-color:var(--panel);
     background-image:linear-gradient(to right,var(--panel) 45%,rgba(13,20,32,0)),
@@ -387,7 +388,6 @@ footer h4{color:var(--txt);font-size:14px}
 .tev .d{font-family:var(--mono);font-size:11.5px;color:var(--acc);letter-spacing:.5px}
 .tev b{display:block;font-size:13.6px;color:var(--txt);margin:3px 0 2px}
 .tev span{font-size:12.6px;color:var(--muted)}
-.tev .hash{font-family:var(--mono);font-size:11px;color:var(--dim)}
 
 /* FAQ */
 .faq details{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px 17px;margin-bottom:10px}
@@ -477,6 +477,7 @@ footer h4{color:var(--txt);font-size:14px}
     <div class="hero-cta">
       <button class="btn pri" onclick="openDeck()">&#9654; Start Presentation Deck</button>
       <a class="btn" href="#architecture">Explore Architecture &darr;</a>
+      <a class="btn" href="documentation/answer.html">Assignment Answer Sheet &rarr;</a>
       <a class="btn" href="#classes">Browse 56 Components</a>
     </div>
   </div>
@@ -509,6 +510,7 @@ footer h4{color:var(--txt);font-size:14px}
       <a class="mapcard" href="#complexity" style="border-color:rgba(129,140,248,.45)"><i>16</i><b>Complexity Table</b><span>Time/memory per algorithm</span></a>
       <a class="mapcard" href="#glossary" style="border-color:rgba(129,140,248,.45)"><i>17</i><b>Glossary</b><span>Key terms defined</span></a>
       <a class="mapcard" href="#faq" style="border-color:rgba(129,140,248,.45)"><i>18</i><b>FAQ &amp; Troubleshooting</b><span>Common questions answered</span></a>
+<a class="mapcard" href="documentation/answer.html" style="border-color:rgba(251,191,36,.5)"><i>✎</i><b>Answer Sheet</b><span>Objective, UML, trace, report, OOP</span></a>
     </div>
   </div>
 </section>
@@ -989,18 +991,18 @@ footer h4{color:var(--txt);font-size:14px}
       <div class="diagram" style="padding:18px">
         <h4 style="font-size:13px;letter-spacing:1.4px;text-transform:uppercase;color:var(--acc);margin-bottom:12px">Boot call-stack</h4>
         <pre style="border:none;background:#060a11"><span class="kw">mvn</span> javafx:run
-â””â”€ <span class="fn">com.smartratelimit_abuse.MainApp.main</span>()
-   â””â”€ <span class="fn">launch</span>(args)                        <span class="cm">// starts JavaFX Application Thread</span>
-      â””â”€ <span class="fn">start</span>(Stage stage)
-         â”œâ”€ <span class="kw">new</span> <span class="fn">EnhancedDashboardView</span>()
-         â”‚   â”œâ”€ enforcer  = <span class="fn">RateLimitEnforcer</span>(<span class="st">10</span>, 3s, 3s, logger)
-         â”‚   â”œâ”€ analyzer  = <span class="fn">RateLimitAnalyzer</span>(<span class="st">5</span> policies)
-         â”‚   â”œâ”€ actionHandler / trafficChart / multiSimulator
-         â”‚   â”œâ”€ statusTimer = <span class="fn">Timeline</span>(1s &rarr; refreshClientViews)
-         â”‚   â”œâ”€ <span class="fn">initLayout</span>()  <span class="kw">&amp;</span>  <span class="fn">setupEvents</span>()
-         â”‚   â””â”€ <span class="fn">loadFromCsv</span>()  <span class="cm">// clients, services, requests</span>
-         â”œâ”€ <span class="kw">new</span> <span class="fn">Scene</span>(root, <span class="st">1000</span>, <span class="st">620</span>) + <span class="st">/styles/main.css</span>
-         â””â”€ stage.<span class="fn">show</span>()</pre>
+└─ <span class="fn">com.smartratelimit_abuse.MainApp.main</span>()
+   └─ <span class="fn">launch</span>(args)                        <span class="cm">// starts JavaFX Application Thread</span>
+      └─ <span class="fn">start</span>(Stage stage)
+         ├─ <span class="kw">new</span> <span class="fn">EnhancedDashboardView</span>()
+         │   ├─ enforcer  = <span class="fn">RateLimitEnforcer</span>(<span class="st">10</span>, 3s, 3s, logger)
+         │   ├─ analyzer  = <span class="fn">RateLimitAnalyzer</span>(<span class="st">5</span> policies)
+         │   ├─ actionHandler / trafficChart / multiSimulator
+         │   ├─ statusTimer = <span class="fn">Timeline</span>(1s &rarr; refreshClientViews)
+         │   ├─ <span class="fn">initLayout</span>()  <span class="kw">&amp;</span>  <span class="fn">setupEvents</span>()
+         │   └─ <span class="fn">loadFromCsv</span>()  <span class="cm">// clients, services, requests</span>
+         ├─ <span class="kw">new</span> <span class="fn">Scene</span>(root, <span class="st">1000</span>, <span class="st">620</span>) + <span class="st">/styles/main.css</span>
+         └─ stage.<span class="fn">show</span>()</pre>
       </div>
       <div>
         <div class="cards" style="grid-template-columns:1fr">
@@ -1323,7 +1325,7 @@ logPanel.<span class="fn">appendEvent</span>(evt, clientId, reason + <span class
     <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
       <div class="card"><h3><span class="ico">&#9881;</span>1 &middot; Open the dialog</h3><p><code>SettingsView.show()</code> opens a 400&times;380 scene with max requests, window, block duration, burst count and burst duration; <code>setOnSave(() -&gt; applySettings(...))</code> binds the button.</p></div>
       <div class="card"><h3><span class="ico">&#128260;</span>2 &middot; Rebuild the core</h3><p><code>applySettings()</code> :516&ndash;540 constructs a <b>new</b> <code>RateLimitEnforcer</code> and a <b>new</b> <code>RateLimitAnalyzer</code> (Fixed &amp; Sliding re-thresholded from the dialog), then pushes them with <code>updateEnforcer()</code> / <code>updateAnalyzer()</code> / <code>updateBurstConfig()</code> :532&ndash;534.</p></div>
-      <div class="card"><h3><span class="ico">&#9989;</span>3 &middot; Confirm + refresh</h3><p>Success toast, a log line <code>Settings saved: Max=â€¦ Window=â€¦s Block=â€¦s Burst=â€¦</code>, <code>refreshClientViews()</code>, and the dialog auto-closes after a 1-second <code>Timeline</code>.</p></div>
+      <div class="card"><h3><span class="ico">&#9989;</span>3 &middot; Confirm + refresh</h3><p>Success toast, a log line <code>Settings saved: Max=%d, Window=%ds, Block=%ds, Burst=%d/%ds</code> (<code>EnhancedDashboardView:538</code>), <code>refreshClientViews()</code>, and the dialog auto-closes after a 1-second <code>Timeline</code>.</p></div>
       <div class="card"><h3><span class="ico" style="background:rgba(248,113,113,.14);border-color:rgba(248,113,113,.3)">&#9888;</span>Known quirk &mdash; Mode D never sees it</h3><p><code>multiSimulator</code> was built at <code>:65</code> holding the <b>boot</b> <code>enforcer</code> and <code>analyzer</code>. <code>applySettings()</code> only reassigns the view&rsquo;s fields, so <b>Mode D keeps enforcing 10 requests / 3s window / 3s block with the boot thresholds</b> until the app is restarted.</p></div>
     </div>
   </div>
@@ -1482,91 +1484,91 @@ analyzer = <span class="kw">new</span> <span class="fn">RateLimitAnalyzer</span>
 
     <div class="two">
       <div class="tree"><span class="d">api-ratelimit-simulator/</span>
-â”œâ”€â”€ <span class="f">index.html</span>              <span class="c">&larr; this documentation (single file)</span>
-â”œâ”€â”€ <span class="f">README.md</span>               <span class="c">&larr; project readme &middot; 11 KB</span>
-â”œâ”€â”€ <span class="f">documentation.md</span>        <span class="c">&larr; full technical spec &middot; 46 KB</span>
-â”œâ”€â”€ <span class="f">details.md</span>              <span class="c">&larr; assignment brief &middot; 5 KB</span>
-â”œâ”€â”€ <span class="f">project_file.pdf</span>         <span class="c">&larr; assignment sheet &middot; 185 KB</span>
-â”œâ”€â”€ <span class="f">pom.xml</span>                 <span class="c">&larr; maven build &middot; 2 KB</span>
-â”œâ”€â”€ <span class="f">.gitignore</span>               <span class="c">&larr; target/, .idea/, *.iml</span>
-â”‚
-â”œâ”€â”€ <span class="d">data/</span>                               <b>4 CSVs &middot; 592 KB</b>
-â”‚   â”œâ”€â”€ <span class="f">clients.csv</span>          <span class="c">clientId,name &middot; 103 B</span>
-â”‚   â”œâ”€â”€ <span class="f">api_services.csv</span>     <span class="c">id,name,isDefault,icon,types &middot; 42 B</span>
-â”‚   â”œâ”€â”€ <span class="f">requests.csv</span>         <span class="c">18-column audit log &middot; 196 KB</span>
-â”‚   â””â”€â”€ <span class="f">multi_requests.csv</span>   <span class="c">multi-service log &middot; 396 KB</span>
-â”‚
-â”œâ”€â”€ <span class="d">sample_data/</span>
-â”‚   â”œâ”€â”€ <span class="f">sample_requests.csv</span>  <span class="c">2.5 KB seed for Import Text</span>
-â”‚   â””â”€â”€ <span class="f">test_requests.txt</span>    <span class="c">3.3 KB scripted sequence</span>
-â”‚
-â””â”€â”€ <span class="d">src/</span>
-    â”œâ”€â”€ <span class="d">main/java/</span>                        <b>46 classes &middot; 6,110 lines</b>
-    â”‚   â”œâ”€â”€ <span class="d">com.smartratelimit_abuse/</span>          <b>1 class &middot; 21</b>
-    â”‚   â”‚   â””â”€â”€ <span class="f">MainApp.java</span>                 
-    â”‚   â””â”€â”€ <span class="d">com.runtime_crew.api_simulator/</span>
-    â”‚       â”œâ”€â”€ <span class="d">model/</span>                         <b>7 classes &middot; 262</b>
-    â”‚       â”‚   â”œâ”€â”€ AbuseReport.java           
-    â”‚       â”‚   â”œâ”€â”€ Client.java                
-    â”‚       â”‚   â”œâ”€â”€ EventType.java             
-    â”‚       â”‚   â”œâ”€â”€ RequestLog.java            
-    â”‚       â”‚   â”œâ”€â”€ RequestType.java           
-    â”‚       â”‚   â”œâ”€â”€ ServiceRequest.java        
-    â”‚       â”‚   â””â”€â”€ ViolationLevel.java        
-    â”‚       â”œâ”€â”€ <span class="d">policy/</span>                        <b>6 types &middot; 353</b>
-    â”‚       â”‚   â”œâ”€â”€ AbnormalPatternPolicy      
-    â”‚       â”‚   â”œâ”€â”€ BurstDetectionPolicy       
-    â”‚       â”‚   â”œâ”€â”€ FixedWindowPolicy          
-    â”‚       â”‚   â”œâ”€â”€ <span class="n">RatePolicy.java &#8592; interface</span>
-    â”‚       â”‚   â”œâ”€â”€ RetryAbusePolicy           
-    â”‚       â”‚   â””â”€â”€ SlidingWindowPolicy        
-    â”‚       â”œâ”€â”€ <span class="d">service/</span>                       <b>12 classes &middot; 1290</b>
-    â”‚       â”‚   â”œâ”€â”€ BurstTrafficGenerator      
-    â”‚       â”‚   â”œâ”€â”€ ClientActivityTracker      
-    â”‚       â”‚   â”œâ”€â”€ ClientRegistryService      
-    â”‚       â”‚   â”œâ”€â”€ CsvFileHandler             
-    â”‚       â”‚   â”œâ”€â”€ CsvParser                  
-    â”‚       â”‚   â”œâ”€â”€ CsvRequestLogEntry         
-    â”‚       â”‚   â”œâ”€â”€ DatasetLoader              
-    â”‚       â”‚   â”œâ”€â”€ EnhancedReportGenerator    
-    â”‚       â”‚   â”œâ”€â”€ RateLimitAnalyzer          
-    â”‚       â”‚   â”œâ”€â”€ RateLimitEnforcer          
-    â”‚       â”‚   â”œâ”€â”€ RequestLogger              
-    â”‚       â”‚   â””â”€â”€ RequestLogService          
-    â”‚       â”œâ”€â”€ <span class="d">ui/dashboard/</span>                  <b>12 classes &middot; 2226</b>
-    â”‚       â”‚   â”œâ”€â”€ ActivityTableView          
-    â”‚       â”‚   â”œâ”€â”€ BarChartView               
-    â”‚       â”‚   â”œâ”€â”€ ControlPanelView           
-    â”‚       â”‚   â”œâ”€â”€ DashboardActionHandler     
-    â”‚       â”‚   â”œâ”€â”€ EnhancedDashboardView      
-    â”‚       â”‚   â”œâ”€â”€ LogPanel                   
-    â”‚       â”‚   â”œâ”€â”€ ReportDialogHelper         
-    â”‚       â”‚   â”œâ”€â”€ ReportViewDialog           
-    â”‚       â”‚   â”œâ”€â”€ SettingsView               
-    â”‚       â”‚   â”œâ”€â”€ StatsPanel                 
-    â”‚       â”‚   â”œâ”€â”€ TopBarView                 
-    â”‚       â”‚   â””â”€â”€ TrafficChartView           
-    â”‚       â””â”€â”€ <span class="d">multiservice/</span>                  <b>8 classes &middot; 1008</b>
-    â”‚           â”œâ”€â”€ <span class="d">model/</span>ApiService             
-    â”‚           â”œâ”€â”€ <span class="d">service/</span>MultiServiceSimulator 
-    â”‚           â”œâ”€â”€ <span class="d">service/</span>ServiceRegistry       
-    â”‚           â””â”€â”€ <span class="d">ui/</span> (5 files)                 <b>683</b>
-    â”‚               â”œâ”€â”€ MultiServiceActionHandler  
-    â”‚               â”œâ”€â”€ MultiServiceBarChartView   
-    â”‚               â”œâ”€â”€ MultiServiceDashboardView  
-    â”‚               â”œâ”€â”€ ServiceManagementDialog    
-    â”‚               â””â”€â”€ ServiceSelectorView        
-    â”‚
-    â”œâ”€â”€ <span class="d">main/resources/</span>
-    â”‚   â”œâ”€â”€ <span class="f">styles/main.css</span>               <span class="c">dark theme &middot; 10 KB</span>
-    â”‚   â””â”€â”€ <span class="f">picture.png</span>                   <span class="c">app icon &middot; 930 KB</span>
-    â”‚
-    â””â”€â”€ <span class="d">test/java/</span>                        <b>4 classes &middot; 442 lines</b>
-        â””â”€â”€ <span class="d">com.runtime_crew.api_simulator/</span>
-            â”œâ”€â”€ <span class="d">service/</span>BurstTrafficGeneratorTest   
-            â”œâ”€â”€ <span class="d">service/</span>DatasetLoaderTest          
-            â”œâ”€â”€ <span class="d">service/</span>EnhancedReportGeneratorTest
-            â””â”€â”€ <span class="d">ui/dashboard/</span>BarChartViewTest      </div>
+├── <span class="f">index.html</span>              <span class="c">&larr; this documentation (single file)</span>
+├── <span class="f">README.md</span>               <span class="c">&larr; project readme &middot; 11 KB</span>
+├── <span class="f">documentation.md</span>        <span class="c">&larr; full technical spec &middot; 46 KB</span>
+├── <span class="f">details.md</span>              <span class="c">&larr; assignment brief &middot; 5 KB</span>
+├── <span class="f">project_file.pdf</span>         <span class="c">&larr; assignment sheet &middot; 185 KB</span>
+├── <span class="f">pom.xml</span>                 <span class="c">&larr; maven build &middot; 2 KB</span>
+├── <span class="f">.gitignore</span>               <span class="c">&larr; target/, .idea/, *.iml</span>
+│
+├── <span class="d">data/</span>                               <b>4 CSVs &middot; 592 KB</b>
+│   ├── <span class="f">clients.csv</span>          <span class="c">clientId,name &middot; 103 B</span>
+│   ├── <span class="f">api_services.csv</span>     <span class="c">id,name,isDefault,icon,types &middot; 42 B</span>
+│   ├── <span class="f">requests.csv</span>         <span class="c">18-column audit log &middot; 196 KB</span>
+│   └── <span class="f">multi_requests.csv</span>   <span class="c">multi-service log &middot; 396 KB</span>
+│
+├── <span class="d">sample_data/</span>
+│   ├── <span class="f">sample_requests.csv</span>  <span class="c">2.5 KB seed for Import Text</span>
+│   └── <span class="f">test_requests.txt</span>    <span class="c">3.3 KB scripted sequence</span>
+│
+└── <span class="d">src/</span>
+    ├── <span class="d">main/java/</span>                        <b>46 classes &middot; 6,110 lines</b>
+    │   ├── <span class="d">com.smartratelimit_abuse/</span>          <b>1 class</b>
+    │   │   └── <span class="f">MainApp.java</span>
+    │   └── <span class="d">com.runtime_crew.api_simulator/</span>
+    │       ├── <span class="d">model/</span>                         <b>7 classes &middot; 262</b>
+    │       │   ├── AbuseReport.java
+    │       │   ├── Client.java
+    │       │   ├── EventType.java
+    │       │   ├── RequestLog.java
+    │       │   ├── RequestType.java
+    │       │   ├── ServiceRequest.java
+    │       │   └── ViolationLevel.java
+    │       ├── <span class="d">policy/</span>                        <b>6 types &middot; 353</b>
+    │       │   ├── AbnormalPatternPolicy
+    │       │   ├── BurstDetectionPolicy
+    │       │   ├── FixedWindowPolicy
+    │       │   ├── <span class="n">RatePolicy.java &#8592; interface</span>
+    │       │   ├── RetryAbusePolicy
+    │       │   └── SlidingWindowPolicy
+    │       ├── <span class="d">service/</span>                       <b>12 classes &middot; 1290</b>
+    │       │   ├── BurstTrafficGenerator
+    │       │   ├── ClientActivityTracker
+    │       │   ├── ClientRegistryService
+    │       │   ├── CsvFileHandler
+    │       │   ├── CsvParser
+    │       │   ├── CsvRequestLogEntry
+    │       │   ├── DatasetLoader
+    │       │   ├── EnhancedReportGenerator
+    │       │   ├── RateLimitAnalyzer
+    │       │   ├── RateLimitEnforcer
+    │       │   ├── RequestLogger
+    │       │   └── RequestLogService
+    │       ├── <span class="d">ui/dashboard/</span>                  <b>12 classes &middot; 2226</b>
+    │       │   ├── ActivityTableView
+    │       │   ├── BarChartView
+    │       │   ├── ControlPanelView
+    │       │   ├── DashboardActionHandler
+    │       │   ├── EnhancedDashboardView
+    │       │   ├── LogPanel
+    │       │   ├── ReportDialogHelper
+    │       │   ├── ReportViewDialog
+    │       │   ├── SettingsView
+    │       │   ├── StatsPanel
+    │       │   ├── TopBarView
+    │       │   └── TrafficChartView
+    │       └── <span class="d">multiservice/</span>                  <b>8 classes &middot; 1008</b>
+    │           ├── <span class="d">model/</span>ApiService
+    │           ├── <span class="d">service/</span>MultiServiceSimulator
+    │           ├── <span class="d">service/</span>ServiceRegistry
+    │           └── <span class="d">ui/</span> (5 files)                 <b>683</b>
+    │               ├── MultiServiceActionHandler
+    │               ├── MultiServiceBarChartView
+    │               ├── MultiServiceDashboardView
+    │               ├── ServiceManagementDialog
+    │               └── ServiceSelectorView
+    │
+    ├── <span class="d">main/resources/</span>
+    │   ├── <span class="f">styles/main.css</span>               <span class="c">dark theme &middot; 10 KB</span>
+    │   └── <span class="f">picture.png</span>                   <span class="c">app icon &middot; 930 KB</span>
+    │
+    └── <span class="d">test/java/</span>                        <b>4 classes &middot; 442 lines</b>
+        └── <span class="d">com.runtime_crew.api_simulator/</span>
+            ├── <span class="d">service/</span>BurstTrafficGeneratorTest
+            ├── <span class="d">service/</span>DatasetLoaderTest
+            ├── <span class="d">service/</span>EnhancedReportGeneratorTest
+            └── <span class="d">ui/dashboard/</span>BarChartViewTest      </div>
 
       <div class="cards" style="grid-template-columns:1fr">
         <div class="card"><h3><span class="ico" style="background:rgba(52,211,153,.14);border-color:rgba(52,211,153,.3)">&#128193;</span><code>model</code> &mdash; Domain</h3><p>7 immutable value objects &amp; enums. The shared vocabulary of the whole system: a request, a client, a log, a report, a severity.</p></div>
@@ -1863,7 +1865,7 @@ loader.getErrors();   loader.getSuccessCount();</pre>
       <div class="cards">
         <div class="card"><b>Single caller</b><p>The only production caller is <code>DashboardActionHandler</code> (7 call sites: <code>:203, 210, 227, 233, 241, 259, 273</code>). <code>ReportViewDialog</code> only renders a <code>String</code> it is handed &mdash; it never calls the generator.</p></div>
         <div class="card"><b>Export is user-driven</b><p>Nothing is written automatically and no <code>report/</code> directory exists. Export happens through a <code>FileChooser</code> (<code>ReportViewDialog:265&ndash;279</code>, <code>DashboardActionHandler:260&ndash;278</code>) with default names <code>report_*.txt</code>, <code>&lt;client&gt;_report_*.txt</code>, <code>ALL_CLIENTS_report_*.txt</code>.</p></div>
-        <div class="card"><b>Icons</b><p>Severity dot is always <code>\u25CF</code> (â—); the icon is &#10006; CRITICAL / &#9888; WARNING / &#10004; otherwise. Bars are <code>&#9608;</code> filled + <code>&#9617;</code> empty, width 10 by default.</p></div>
+        <div class="card"><b>Icons</b><p>Severity dot is always <code>\u25CF</code> (●); the icon is &#10006; CRITICAL / &#9888; WARNING / &#10004; otherwise. Bars are <code>&#9608;</code> filled + <code>&#9617;</code> empty, width 10 by default.</p></div>
       </div>
     </div>
   </div>
@@ -1958,7 +1960,8 @@ loader.getErrors();   loader.getSuccessCount();</pre>
                 <tr><td class="k">README.md</td><td>Features, quick start, team table, architecture ASCII diagram</td></tr>
                 <tr><td class="k">documentation.md</td><td>752-line full technical specification (11 chapters)</td></tr>
                 <tr><td class="k">details.md</td><td>Assignment brief, concept overview, required features</td></tr>
-                <tr><td class="k">index.html</td><td>This interactive documentation &amp; presentation deck</td></tr>
+                <tr><td class="k">index.html</td><td>Project website — architecture, class index, policies, reports, tests and timeline of the simulator</td></tr>
+                <tr><td class="k"><a href="documentation/answer.html" style="color:var(--acc)">documentation/answer.html</a></td><td>Assignment answer sheet — objective, UML diagram, worked trace, sample report, OOP mapping</td></tr>
                 <tr><td class="k">project_file.pdf</td><td>Submitted project report</td></tr>
               </tbody>
             </table>
@@ -2383,88 +2386,72 @@ loader.getErrors();   loader.getSuccessCount();</pre>
 
 <!-- ================= FOOTER ================= -->
 <footer>
-  <div class="wrap">
-    <div class="two">
-      <div>
-        <h4>Smart API Rate-Limit &amp; Abuse Simulator &mdash; v1.0</h4>
-        <p>Developed for the <b style="color:var(--txt)">Object-Oriented Programming</b> course, Department of CSE, Begum Rokeya University, Rangpur (BRUR). All rate-limiting, queuing, abuse detection and traffic synthesis run purely in memory &mdash; no sockets, no external services. Academic use only.</p>
-        <p style="font-size:12.5px;color:var(--dim)">Repo: <a href="https://github.com/With-ALIF/api-ratelimit-simulator">github.com/With-ALIF/api-ratelimit-simulator</a> &middot; Docs: <code>README.md</code> &middot; <code>documentation.md</code> &middot; <code>details.md</code></p>
-      </div>
-      <div>
-        <h4>Team &mdash; Runtime Crew (Group 02)</h4>
-        <div class="team">
-          <div class="tm"><b>Md. Abdullah - Al - Khalid Alif</b><span>Architecture &middot; Simulator Engine &middot; Core UI &amp; Integration</span></div>
-          <div class="tm"><b>Mithun Chandra Sarker</b><span>Rate-Limiting Policies &middot; Evaluation Strategies</span></div>
-          <div class="tm"><b>Md. Asadujjaman</b><span>Activity Tracking &middot; Abuse Detection &amp; Reporting</span></div>
-          <div class="tm"><b>Sojib Ray Shourav</b><span>Dataset Ingestion &middot; Testing &middot; Traffic Generation</span></div>
-        </div>
-      </div>
-    </div>
-    <p style="margin-top:26px;font-size:12px;color:var(--dim);border-top:1px solid var(--line);padding-top:16px">
-      Documentation index &middot; 46 main classes &middot; 4 test classes &middot; 5,160 LOC &middot; 6 packages &middot; 5 policies &middot; Java 17 + JavaFX 21 + Maven.
-    </p>
+  <div class="wrap" style="text-align:center">
+    <h4 style="font-size:17px;margin:0 0 8px">Smart API Rate-Limit &amp; Abuse Simulator</h4>
+    <p style="margin:0 0 6px;color:var(--muted)">Java 21 &amp; JavaFX</p>
+    <p style="margin:0;color:var(--acc);font-weight:700;letter-spacing:1.5px">Run Time Crew</p>
   </div>
 </footer>
 
 <script>
 /* ============ CLASS INDEX DATA ============ */
 var CLASSES = [
-["AbnormalPatternPolicy","policy","class","Off-hours, request-type imbalance and uniform-interval bot heuristics","evaluate() &middot; detectOffHoursActivity() &middot; detectRequestTypeImbalance() &middot; detectUniformIntervals()",97],
-["ActivityTableView","ui","class","Sortable/filterable chronological activity table with colored status cells","setRecords() &middot; setStatusFilter() &middot; setTypeFilter() &middot; setServiceColumnVisible()",170],
-["ApiService","ms","class","Value object for a simulated API service (id, name, icon, enabled event types)","defaultEventTypes() &middot; isEventTypeEnabled() &middot; parseEventTypes()",59],
-["AbuseReport","model","class","Collects violations; monotonic severity + risk score calculator","addViolation() &middot; setLevel() &middot; getRiskScore() &middot; isCritical() &middot; getSummary()",69],
-["BarChartView","ui","class","Allowed-vs-blocked chart per service/type, aggregating activity records","refresh() &middot; aggregateServiceStats()",148],
-["BurstDetectionPolicy","policy","class","Detects clusters of &ge;4 requests inside a 3-second span","evaluate() &middot; getBurstThreshold() &middot; getBurstWindow()",64],
-["BurstTrafficGenerator","service","class","Synthesizes high-velocity request bursts with artificial timestamps","generateBurst(clientId, count, duration)",27],
-["Client","model","class","Immutable client identity; equality based purely on clientId","getClientId() &middot; getName() &middot; equals()/hashCode()",34],
-["ClientActivityTracker","service","class","Per-client totals, allowed/blocked counters and success-rate maths","registerClient() &middot; trackRequest() &middot; getActivity() &middot; restoreFromLogEntries()",140],
-["ClientActivityTracker.ClientActivity","service","inner class","Nested per-client accumulator with record list and success rate","recordActivity() &middot; getSuccessRate() &middot; getLastActivityTime()",0],
-["ClientActivityTracker.ActivityRecord","service","inner class","Immutable row: client, service, timestamp, type, ALLOWED/BLOCKED","getStatus() &middot; getFormattedTime() &middot; getService()",0],
-["ClientRegistryService","service","class","CSV-backed client registry with defaults, add/remove/rename","register() &middot; loadAll() &middot; removeClient() &middot; renameClient() &middot; isDefaultClient()",101],
-["ControlPanelView","ui","class","Left panel: client/type/status selectors, action buttons, quota &amp; risk badges","setOnSendRequest() &middot; updateQuota() &middot; updateRiskLevel() &middot; updateBlockCountdown()",256],
-["CsvFileHandler","service","class","Generic CSV file I/O: ensure, read, append, rewrite, clear","ensureFileExists() &middot; readLines() &middot; appendLine() &middot; rewriteFile()",58],
-["CsvParser","service","class","Static CSV line builder/parser, endpoint &amp; method mapping","buildCsvLine() &middot; parseLine() &middot; mapEndpoint() &middot; mapMethod()",66],
-["CsvRequestLogEntry","service","DTO","Typed row parsed from the request-log CSV","isBlocked() &middot; getRequestType() &middot; public fields for all 18 columns",36],
-["DashboardActionHandler","ui","class","Command layer orchestrating every button action end-to-end","handleSendRequest() &middot; handleSimulateBurst() &middot; handleLoadDataset() &middot; handleFullReport() &middot; handleExport()",295],
-["DatasetLoader","service","class","Fault-tolerant CSV/TXT dataset parser (3 delimiters, 4 timestamp formats)","loadFromFile() &middot; loadFromText() &middot; parseLine() &middot; getErrors()",73],
-["DatasetLoader.LoadResult","service","inner class","Parse outcome: request list + error list with success/error counters","getRequests() &middot; getErrors() &middot; getSuccessCount() &middot; getErrorCount()",0],
-["EnhancedDashboardView","ui","class","Root BorderPane: composes all panels, timers, filters and mode switching","setupEvents() &middot; refreshClientViews() &middot; handleMultiService() &middot; applySettings() &middot; loadFromCsv()",607],
-["EnhancedReportGenerator","service","class","Largest service: ASCII/HTML multi-format report rendering","generateViolationReport() &middot; generateAllClientsFullReport() &middot; generateComparisonReport() &middot; getProgressBar()",459],
-["EventType","model","enum","REQUEST, ALLOWED, RATE_LIMITED, ABUSE_DETECTED, BLOCKED labels","getDisplayName()",15],
-["FixedWindowPolicy","policy","class","Counts requests in a discrete window ending at the latest timestamp","evaluate() &middot; getMaxRequests() &middot; getWindow()",47],
-["LogPanel","ui","class","Monospaced auto-scrolling audit console at the bottom of the screen","append() &middot; appendEvent() &middot; clear() &middot; getLogArea()",40],
-["MainApp","entry","class","JavaFX Application entry point; builds scene, loads CSS, shows the stage","start(Stage) &middot; main(String[])",21],
-["MultiServiceActionHandler","ms","class","Dispatches multi-service send / burst commands into the simulator (only caller: the never-instantiated dashboard)","handleSendRequest() &middot; handleSimulateBurst() &middot; updateBurstConfig()",73],
-["MultiServiceBarChartView","ms","class","Bar chart of allowed vs blocked grouped per selected service","refresh(serviceIds)",67],
-["MultiServiceDashboardView","ms","class","Standalone multi-service dashboard layout â€” complete but never instantiated by MainApp","initLayout() &middot; refreshStats() &middot; loadPreviousLogs()",185],
-["MultiServiceSimulator","ms","class","Fans one request out to N services with isolated per-service quotas","sendRequest() &middot; simulateBurst() &middot; getRemainingQuota() &middot; determineEventType()",140],
-["MultiServiceSimulator.ServiceResult","ms","inner class","Per-service fan-out outcome: ids, request, enforcer verdict, event type, risk","isBlocked() &middot; getRemainingQuota() &middot; public serviceId/clientId/riskScore fields",0],
-["MultiServiceSimulator.BurstResult","ms","inner class","Aggregated burst totals per service: total, allowed, blocked","public serviceId/total/allowed/blocked fields",0],
-["RateLimitAnalyzer","service","class","Slices the last 10 seconds and runs every registered policy","analyze(log) &middot; getPolicies() &middot; getPolicyCount()",34],
-["RateLimitEnforcer","service","class","Real-time gatekeeper: window counting, cooldown, quota and reset timing","shouldBlock() &middot; processRequest() &middot; getRemainingQuota() &middot; getTimeUntilReset()",140],
-["RateLimitEnforcer.RequestResult","service","inner class","Outcome record: request, blocked flag, remaining quota, status message","isBlocked() &middot; isAllowed() &middot; getRemainingQuota() &middot; getStatusMessage()",0],
-["RatePolicy","policy","interface","Strategy contract all five algorithms implement","evaluate(RequestLog, AbuseReport) &middot; getName() &middot; getDescription()",18],
-["ReportDialogHelper","ui","utility","Static helpers for alerts, report popups, comparison tables, file chooser","showReport() &middot; showComparisonTable() &middot; showAlert() &middot; chooseExportFile()",47],
-["ReportViewDialog","ui","class","Modal monospaced report viewer with copy and export-to-file","show(owner, title, content) &middot; showComparisonTable() &middot; exportToFile()",246],
-["RequestLog","model","class","Per-client chronological ledger with unmodifiable view","addRequest() &middot; getRequests() &middot; getRequestCount() &middot; clear()",35],
-["RequestLogger","service","class","Central in-memory Map&lt;clientId, RequestLog&gt; store","logRequest() &middot; getLog() &middot; getAllLogs() &middot; clearClient() &middot; getTotalRequestCount()",37],
-["RequestLogService","service","class","Persistent request log: append rows, load entries, move/clear clients","append() &middot; loadAll() &middot; removeClient() &middot; moveClientLogs() &middot; clearAll()",119],
-["RequestType","model","enum","READ, WRITE, UPDATE, DELETE with display names and descriptions","getDisplayName() &middot; getDescription()",23],
-["RetryAbusePolicy","policy","class","Sub-second rapid retries and chains of fast consecutive requests","evaluate() &middot; detectRapidRetries() &middot; detectSuspiciousRapidRequests()",74],
-["ServiceManagementDialog","ms","class","Add / remove / search API services with event-type toggles","show(owner) &middot; setOnServicesChanged() &middot; showAddDialog()",261],
-["ServiceRegistry","ms","class","CSV-backed registry of API services with 4 seeded defaults","addService() &middot; removeService() &middot; getAll() &middot; getServiceEventTypes()",126],
-["ServiceRequest","model","class","Immutable request: clientId, service, requestType, timestamp","getFormattedTime() &middot; equals()/hashCode() &middot; toString()",61],
-["ServiceSelectorView","ms","class","Checkbox group for picking target services with selection callbacks","getSelectedServiceIds() &middot; refreshCheckboxes() &middot; setOnSelectionChanged()",97],
-["SettingsView","ui","class","Editable rate-limit &amp; burst parameters with validation and reset","getMaxRequests() &middot; getTimeWindow() &middot; getBlockDuration() &middot; resetToDefaults()",156],
-["SlidingWindowPolicy","policy","class","Scans every request pair to enforce a strict rolling limit","evaluate() &middot; getMaxRequests() &middot; getWindow()",53],
-["StatsPanel","ui","class","Compact metric grid: total, allowed, blocked, success rate","updateStats() &middot; resetStats()",78],
-["TopBarView","ui","class","Header banner with application title, subtitle and team attribution","constructor-built header layout",37],
-["TrafficChartView","ui","class","Live 60-second line chart of allowed vs blocked traffic (3s ticks)","updateData() &middot; stop()",146],
-["ViolationLevel","model","enum","NORMAL / WARNING / CRITICAL severity ladder with comparison helper","isMoreSevereThan() &middot; getDisplayName() &middot; getDescription()",25],
-["BurstTrafficGeneratorTest","test","test","1 test: exact burst count, client mapping, monotonic timestamps","generateBurst() returns 20 stamped requests",23],
-["DatasetLoaderTest","test","test","3 tests: comma parsing, comment/header skipping (3 ok / 0 err), sample files exist","parseLine() &middot; loadFromText() &middot; fixture files",49],
-["EnhancedReportGeneratorTest","test","test","6 tests: section headers, service grouping, fixed-width table alignment","report strings &middot; column widths &middot; TOTAL row",177],
-["BarChartViewTest","test","test","5 tests: aggregation, sentinel exclusion, null-safety + simulator integration","aggregateServiceStats() &middot; temp CSV run",110]
+["AbnormalPatternPolicy","policy","class","Off-hours, request-type imbalance and uniform-interval bot heuristics","evaluate() &middot; detectOffHoursActivity() &middot; detectRequestTypeImbalance() &middot; detectUniformIntervals()"],
+["ActivityTableView","ui","class","Sortable/filterable chronological activity table with colored status cells","setRecords() &middot; setStatusFilter() &middot; setTypeFilter() &middot; setServiceColumnVisible()"],
+["ApiService","ms","class","Value object for a simulated API service (id, name, icon, enabled event types)","defaultEventTypes() &middot; isEventTypeEnabled() &middot; parseEventTypes()"],
+["AbuseReport","model","class","Collects violations; monotonic severity + risk score calculator","addViolation() &middot; setLevel() &middot; getRiskScore() &middot; isCritical() &middot; getSummary()"],
+["BarChartView","ui","class","Allowed-vs-blocked chart per service/type, aggregating activity records","refresh() &middot; aggregateServiceStats()"],
+["BurstDetectionPolicy","policy","class","Detects clusters of &ge;4 requests inside a 3-second span","evaluate() &middot; getBurstThreshold() &middot; getBurstWindow()"],
+["BurstTrafficGenerator","service","class","Synthesizes high-velocity request bursts with artificial timestamps","generateBurst(clientId, count, duration)"],
+["Client","model","class","Immutable client identity; equality based purely on clientId","getClientId() &middot; getName() &middot; equals()/hashCode()"],
+["ClientActivityTracker","service","class","Per-client totals, allowed/blocked counters and success-rate maths","registerClient() &middot; trackRequest() &middot; getActivity() &middot; restoreFromLogEntries()"],
+["ClientActivityTracker.ClientActivity","service","inner class","Nested per-client accumulator with record list and success rate","recordActivity() &middot; getSuccessRate() &middot; getLastActivityTime()"],
+["ClientActivityTracker.ActivityRecord","service","inner class","Immutable row: client, service, timestamp, type, ALLOWED/BLOCKED","getStatus() &middot; getFormattedTime() &middot; getService()"],
+["ClientRegistryService","service","class","CSV-backed client registry with defaults, add/remove/rename","register() &middot; loadAll() &middot; removeClient() &middot; renameClient() &middot; isDefaultClient()"],
+["ControlPanelView","ui","class","Left panel: client/type/status selectors, action buttons, quota &amp; risk badges","setOnSendRequest() &middot; updateQuota() &middot; updateRiskLevel() &middot; updateBlockCountdown()"],
+["CsvFileHandler","service","class","Generic CSV file I/O: ensure, read, append, rewrite, clear","ensureFileExists() &middot; readLines() &middot; appendLine() &middot; rewriteFile()"],
+["CsvParser","service","class","Static CSV line builder/parser, endpoint &amp; method mapping","buildCsvLine() &middot; parseLine() &middot; mapEndpoint() &middot; mapMethod()"],
+["CsvRequestLogEntry","service","DTO","Typed row parsed from the request-log CSV","isBlocked() &middot; getRequestType() &middot; public fields for all 18 columns"],
+["DashboardActionHandler","ui","class","Command layer orchestrating every button action end-to-end","handleSendRequest() &middot; handleSimulateBurst() &middot; handleLoadDataset() &middot; handleFullReport() &middot; handleExport()"],
+["DatasetLoader","service","class","Fault-tolerant CSV/TXT dataset parser (3 delimiters, 4 timestamp formats)","loadFromFile() &middot; loadFromText() &middot; parseLine() &middot; getErrors()"],
+["DatasetLoader.LoadResult","service","inner class","Parse outcome: request list + error list with success/error counters","getRequests() &middot; getErrors() &middot; getSuccessCount() &middot; getErrorCount()"],
+["EnhancedDashboardView","ui","class","Root BorderPane: composes all panels, timers, filters and mode switching","setupEvents() &middot; refreshClientViews() &middot; handleMultiService() &middot; applySettings() &middot; loadFromCsv()"],
+["EnhancedReportGenerator","service","class","Largest service: ASCII/HTML multi-format report rendering","generateViolationReport() &middot; generateAllClientsFullReport() &middot; generateComparisonReport() &middot; getProgressBar()"],
+["EventType","model","enum","REQUEST, ALLOWED, RATE_LIMITED, ABUSE_DETECTED, BLOCKED labels","getDisplayName()"],
+["FixedWindowPolicy","policy","class","Counts requests in a discrete window ending at the latest timestamp","evaluate() &middot; getMaxRequests() &middot; getWindow()"],
+["LogPanel","ui","class","Monospaced auto-scrolling audit console at the bottom of the screen","append() &middot; appendEvent() &middot; clear() &middot; getLogArea()"],
+["MainApp","entry","class","JavaFX Application entry point; builds scene, loads CSS, shows the stage","start(Stage) &middot; main(String[])"],
+["MultiServiceActionHandler","ms","class","Dispatches multi-service send / burst commands into the simulator (only caller: the never-instantiated dashboard)","handleSendRequest() &middot; handleSimulateBurst() &middot; updateBurstConfig()"],
+["MultiServiceBarChartView","ms","class","Bar chart of allowed vs blocked grouped per selected service","refresh(serviceIds)"],
+["MultiServiceDashboardView","ms","class","Standalone multi-service dashboard layout — complete but never instantiated by MainApp","initLayout() &middot; refreshStats() &middot; loadPreviousLogs()"],
+["MultiServiceSimulator","ms","class","Fans one request out to N services with isolated per-service quotas","sendRequest() &middot; simulateBurst() &middot; getRemainingQuota() &middot; determineEventType()"],
+["MultiServiceSimulator.ServiceResult","ms","inner class","Per-service fan-out outcome: ids, request, enforcer verdict, event type, risk","isBlocked() &middot; getRemainingQuota() &middot; public serviceId/clientId/riskScore fields"],
+["MultiServiceSimulator.BurstResult","ms","inner class","Aggregated burst totals per service: total, allowed, blocked","public serviceId/total/allowed/blocked fields"],
+["RateLimitAnalyzer","service","class","Slices the last 10 seconds and runs every registered policy","analyze(log) &middot; getPolicies() &middot; getPolicyCount()"],
+["RateLimitEnforcer","service","class","Real-time gatekeeper: window counting, cooldown, quota and reset timing","shouldBlock() &middot; processRequest() &middot; getRemainingQuota() &middot; getTimeUntilReset()"],
+["RateLimitEnforcer.RequestResult","service","inner class","Outcome record: request, blocked flag, remaining quota, status message","isBlocked() &middot; isAllowed() &middot; getRemainingQuota() &middot; getStatusMessage()"],
+["RatePolicy","policy","interface","Strategy contract all five algorithms implement","evaluate(RequestLog, AbuseReport) &middot; getName() &middot; getDescription()"],
+["ReportDialogHelper","ui","utility","Static helpers for alerts, report popups, comparison tables, file chooser","showReport() &middot; showComparisonTable() &middot; showAlert() &middot; chooseExportFile()"],
+["ReportViewDialog","ui","class","Modal monospaced report viewer with copy and export-to-file","show(owner, title, content) &middot; showComparisonTable() &middot; exportToFile()"],
+["RequestLog","model","class","Per-client chronological ledger with unmodifiable view","addRequest() &middot; getRequests() &middot; getRequestCount() &middot; clear()"],
+["RequestLogger","service","class","Central in-memory Map&lt;clientId, RequestLog&gt; store","logRequest() &middot; getLog() &middot; getAllLogs() &middot; clearClient() &middot; getTotalRequestCount()"],
+["RequestLogService","service","class","Persistent request log: append rows, load entries, move/clear clients","append() &middot; loadAll() &middot; removeClient() &middot; moveClientLogs() &middot; clearAll()"],
+["RequestType","model","enum","READ, WRITE, UPDATE, DELETE with display names and descriptions","getDisplayName() &middot; getDescription()"],
+["RetryAbusePolicy","policy","class","Sub-second rapid retries and chains of fast consecutive requests","evaluate() &middot; detectRapidRetries() &middot; detectSuspiciousRapidRequests()"],
+["ServiceManagementDialog","ms","class","Add / remove / search API services with event-type toggles","show(owner) &middot; setOnServicesChanged() &middot; showAddDialog()"],
+["ServiceRegistry","ms","class","CSV-backed registry of API services with 4 seeded defaults","addService() &middot; removeService() &middot; getAll() &middot; getServiceEventTypes()"],
+["ServiceRequest","model","class","Immutable request: clientId, service, requestType, timestamp","getFormattedTime() &middot; equals()/hashCode() &middot; toString()"],
+["ServiceSelectorView","ms","class","Checkbox group for picking target services with selection callbacks","getSelectedServiceIds() &middot; refreshCheckboxes() &middot; setOnSelectionChanged()"],
+["SettingsView","ui","class","Editable rate-limit &amp; burst parameters with validation and reset","getMaxRequests() &middot; getTimeWindow() &middot; getBlockDuration() &middot; resetToDefaults()"],
+["SlidingWindowPolicy","policy","class","Scans every request pair to enforce a strict rolling limit","evaluate() &middot; getMaxRequests() &middot; getWindow()"],
+["StatsPanel","ui","class","Compact metric grid: total, allowed, blocked, success rate","updateStats() &middot; resetStats()"],
+["TopBarView","ui","class","Header banner with application title, subtitle and team attribution","constructor-built header layout"],
+["TrafficChartView","ui","class","Live 60-second line chart of allowed vs blocked traffic (3s ticks)","updateData() &middot; stop()"],
+["ViolationLevel","model","enum","NORMAL / WARNING / CRITICAL severity ladder with comparison helper","isMoreSevereThan() &middot; getDisplayName() &middot; getDescription()"],
+["BurstTrafficGeneratorTest","test","test","1 test: exact burst count, client mapping, monotonic timestamps","generateBurst() returns 20 stamped requests"],
+["DatasetLoaderTest","test","test","3 tests: comma parsing, comment/header skipping (3 ok / 0 err), sample files exist","parseLine() &middot; loadFromText() &middot; fixture files"],
+["EnhancedReportGeneratorTest","test","test","6 tests: section headers, service grouping, fixed-width table alignment","report strings &middot; column widths &middot; TOTAL row"],
+["BarChartViewTest","test","test","5 tests: aggregation, sentinel exclusion, null-safety + simulator integration","aggregateServiceStats() &middot; temp CSV run"]
 ];
 
 var PKGLABEL = {model:"model",policy:"policy",service:"service",ui:"ui.dashboard",ms:"multiservice",test:"test",entry:"com.smartratelimit_abuse"};
