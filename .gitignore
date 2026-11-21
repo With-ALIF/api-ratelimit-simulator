@@ -50,3 +50,9 @@ Thumbs.db
 # Local CSV Data (auto-created on first run)
 # =========================
 data/*.csv
+
+# =========================
+# HTML Docs
+# =========================
+index.html
+documentation/answer.html
