@@ -7,8 +7,6 @@
 
 ## 🌐 Live Web Documentation & Presentation Deck
 
-🔗 **Live URL:** [https://api-ratelimit.netlify.app/](https://api-ratelimit.netlify.app/)
+🔗**Live URL:** <a href="https://api-ratelimit.netlify.app/" target="_blank" rel="noopener noreferrer">https://api-ratelimit.netlify.app/</a>
 
 The interactive presentation deck and comprehensive project architecture overview are hosted live on Netlify.
-
-
